@@ -1,0 +1,2016 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ChargeNode Fleet – Fordonsöversikt</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════
+   ChargeNode Fleet – Fleet Manager Variant
+   Stripped-down, vehicle-centric, readiness-first
+   ═══════════════════════════════════════════════════ */
+
+:root {
+  --bg:#FAFAFA; --panel:#ffffff; --panel2:#F5F5F5; --text:#212121; --text2:#424242; --muted:#757575; --light:#BDBDBD; --line:#E0E0E0;
+  --brand:#00C853; --brand-dark:#00B800; --brand-light:#E8F5E9; --brand-secondary:#69F0AE;
+  --brand-glow:rgba(0,200,83,.12);
+  --good:#00C853; --warn:#FF9800; --bad:#F44336; --info:#2196F3;
+  --ok-bg:#E8F5E9; --warn-bg:#FFF3E0; --bad-bg:#FFEBEE; --info-bg:#E3F2FD;
+  --shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-lg: 0 4px 12px rgba(0,0,0,.08);
+  --shadow-xl: 0 12px 40px rgba(0,0,0,.12);
+  --radius:12px; --radius-sm:8px; --radius-xs:6px;
+  --sidebar-w:220px;
+  --transition:.2s cubic-bezier(.4,0,.2,1);
+  font-family:'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color-scheme:light;
+}
+[data-theme="dark"]{
+  --bg:#0D0D0D; --panel:#1A1A1A; --panel2:#252525; --text:#FFFFFF; --text2:#E0E0E0; --muted:#999; --light:#666; --line:rgba(255,255,255,.12);
+  --brand:#00C853; --brand-dark:#00EB00; --brand-light:rgba(0,200,83,.08); --brand-secondary:#69F0AE;
+  --brand-glow:rgba(0,200,83,.2);
+  --ok-bg:rgba(0,200,83,.06); --warn-bg:rgba(255,152,0,.06); --bad-bg:rgba(244,67,54,.08); --info-bg:rgba(33,150,243,.06);
+  --shadow:0 1px 3px rgba(0,0,0,.3); --shadow-lg:0 4px 12px rgba(0,0,0,.4); --shadow-xl:0 12px 40px rgba(0,0,0,.6);
+  color-scheme:dark;
+}
+
+/* ── Reset & Base ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+body{background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;font-size:inherit}
+input,select,textarea{font-family:inherit;font-size:inherit;color:var(--text);background:var(--panel);border:1.5px solid var(--line);border-radius:var(--radius-xs);padding:7px 10px;outline:none;transition:border-color var(--transition)}
+input:focus,select:focus{border-color:var(--brand)}
+a{color:var(--brand);text-decoration:none}
+
+/* ── Layout Shell ── */
+.app{display:flex;min-height:100vh}
+
+/* ── Sidebar ── */
+.sidebar{
+  width:var(--sidebar-w);min-height:100vh;background:var(--panel);border-right:1px solid var(--line);
+  display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;
+  transition:transform .25s cubic-bezier(.4,0,.2,1);
+}
+.sidebar-brand{padding:20px 16px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line)}
+.sidebar-brand .logo{font-size:16px;font-weight:800;letter-spacing:-.5px}
+.sidebar-brand .logo span{color:var(--brand)}
+.sidebar-brand .badge-fleet{font-size:9px;font-weight:700;background:var(--brand);color:#fff;padding:2px 6px;border-radius:4px;letter-spacing:.5px;text-transform:uppercase}
+.sidebar-org{padding:12px 16px;border-bottom:1px solid var(--line)}
+.sidebar-org select{width:100%;font-size:12px;font-weight:600;padding:6px 8px;border-radius:var(--radius-xs);background:var(--panel2);border:1px solid var(--line)}
+.sidebar-nav{flex:1;padding:8px;overflow-y:auto}
+.nav-section{margin-bottom:4px}
+.nav-section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px 4px}
+.nav-item{
+  display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius-sm);
+  font-size:12.5px;font-weight:500;color:var(--text2);cursor:pointer;transition:all var(--transition);
+  position:relative;
+}
+.nav-item:hover{background:var(--panel2)}
+.nav-item.active{background:var(--brand-light);color:var(--brand-dark);font-weight:600}
+.nav-item .nav-icon{width:20px;text-align:center;font-size:14px;flex-shrink:0}
+.nav-item .nav-badge{
+  margin-left:auto;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;
+  min-width:18px;text-align:center;
+}
+.nav-badge.red{background:rgba(244,67,54,.12);color:var(--bad)}
+.nav-badge.orange{background:rgba(255,152,0,.12);color:var(--warn)}
+.nav-badge.green{background:var(--ok-bg);color:var(--good)}
+.nav-badge.blue{background:var(--info-bg);color:var(--info)}
+
+.sidebar-footer{padding:12px 16px;border-top:1px solid var(--line);font-size:11px;color:var(--muted)}
+.sidebar-footer .theme-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 0}
+.sidebar-footer .theme-toggle:hover{color:var(--text)}
+
+/* ── Mobile ── */
+.hamburger{display:none;position:fixed;top:12px;left:12px;z-index:200;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm);width:40px;height:40px;align-items:center;justify-content:center;font-size:18px;box-shadow:var(--shadow)}
+.mobile-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:90;opacity:0;transition:opacity .25s}
+.mobile-overlay.open{display:block;opacity:1}
+@media(max-width:768px){
+  .hamburger{display:flex}
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0);box-shadow:var(--shadow-xl)}
+  .main{margin-left:0!important}
+  .main-header{padding-left:56px!important}
+}
+
+/* ── Main Area ── */
+.main{margin-left:var(--sidebar-w);flex:1;min-height:100vh;display:flex;flex-direction:column}
+.main-header{
+  padding:16px 24px;display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:50;
+  gap:12px;flex-wrap:wrap;
+}
+.main-header h1{font-size:18px;font-weight:700;letter-spacing:-.3px}
+.main-header .sub{font-size:11px;color:var(--muted);margin-top:1px}
+.header-actions{display:flex;align-items:center;gap:8px}
+.header-actions .btn{
+  display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:var(--radius-sm);
+  font-size:12px;font-weight:600;border:1.5px solid var(--line);transition:all var(--transition);
+}
+.header-actions .btn:hover{background:var(--panel2);border-color:var(--muted)}
+.header-actions .btn.primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+.header-actions .btn.primary:hover{background:var(--brand-dark)}
+.main-content{padding:20px 24px;flex:1}
+@media(max-width:768px){
+  .main-content{padding:16px 12px}
+  .main-header{padding:12px 16px 12px 56px}
+}
+
+/* ── Section / View management ── */
+.view-section{display:none}
+.view-section.active{display:block}
+
+/* ── Cards ── */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;transition:box-shadow var(--transition)}
+.card:hover{box-shadow:var(--shadow-lg)}
+.card-head{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+.card-head h3{font-size:13px;font-weight:700}
+.card-head .meta{font-size:10px;color:var(--muted);margin-top:1px}
+.card-body{padding:16px}
+.card-body.compact{padding:12px}
+
+/* ── Readiness Hero ── */
+.readiness-hero{
+  display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:20px;
+}
+@media(max-width:900px){.readiness-hero{grid-template-columns:1fr 1fr}}
+@media(max-width:500px){.readiness-hero{grid-template-columns:1fr}}
+.hero-stat{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;
+  display:flex;flex-direction:column;gap:4px;box-shadow:var(--shadow);position:relative;overflow:hidden;
+  transition:all var(--transition);cursor:default;
+}
+.hero-stat:hover{box-shadow:var(--shadow-lg);transform:translateY(-1px)}
+.hero-stat .hs-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
+.hero-stat .hs-value{font-size:28px;font-weight:800;letter-spacing:-1px;line-height:1.1}
+.hero-stat .hs-sub{font-size:11px;color:var(--muted)}
+.hero-stat .hs-accent{position:absolute;bottom:0;left:0;right:0;height:3px}
+.hero-stat.green .hs-value{color:var(--good)} .hero-stat.green .hs-accent{background:var(--good)}
+.hero-stat.orange .hs-value{color:var(--warn)} .hero-stat.orange .hs-accent{background:var(--warn)}
+.hero-stat.red .hs-value{color:var(--bad)} .hero-stat.red .hs-accent{background:var(--bad)}
+.hero-stat.blue .hs-value{color:var(--info)} .hero-stat.blue .hs-accent{background:var(--info)}
+.hero-stat.neutral .hs-value{color:var(--text)}
+
+/* ── Vehicle List ── */
+.vehicle-list{display:flex;flex-direction:column;gap:6px}
+.v-row{
+  display:grid;grid-template-columns:40px 1fr 100px 80px 100px 60px;gap:8px;align-items:center;
+  padding:10px 14px;border-radius:var(--radius-sm);border:1px solid var(--line);background:var(--panel);
+  font-size:12px;cursor:pointer;transition:all var(--transition);
+}
+.v-row:hover{background:var(--brand-light);border-color:var(--brand);box-shadow:var(--shadow)}
+.v-row.alert-row{border-color:rgba(244,67,54,.25);background:var(--bad-bg)}
+.v-row.warn-row{border-color:rgba(255,152,0,.25);background:var(--warn-bg)}
+@media(max-width:768px){
+  .v-row{grid-template-columns:32px 1fr 70px 60px;font-size:11px;padding:8px 10px}
+  .v-row .v-col-dep,.v-row .v-col-action{display:none}
+}
+.v-status-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin:auto}
+.v-status-dot.ready{background:var(--good);box-shadow:0 0 6px rgba(0,200,83,.4)}
+.v-status-dot.charging{background:var(--info);box-shadow:0 0 6px rgba(33,150,243,.4);animation:pulse-dot 2s infinite}
+.v-status-dot.risk{background:var(--warn);box-shadow:0 0 6px rgba(255,152,0,.4)}
+.v-status-dot.problem{background:var(--bad);box-shadow:0 0 6px rgba(244,67,54,.4);animation:pulse-dot 1.5s infinite}
+.v-status-dot.offline{background:var(--light)}
+.v-status-dot.unknown{background:var(--light);border:2px dashed var(--muted)}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.5}}
+
+.v-id{font-weight:700}
+.v-model{font-size:10px;color:var(--muted);margin-top:1px}
+.v-soc-bar{height:6px;border-radius:99px;background:var(--panel2);overflow:hidden;width:100%;max-width:80px}
+.v-soc-fill{height:100%;border-radius:99px;transition:width .5s}
+.v-soc-fill.high{background:var(--good)} .v-soc-fill.mid{background:var(--warn)} .v-soc-fill.low{background:var(--bad)}
+.v-soc-text{font-size:11px;font-weight:700;margin-top:2px}
+
+/* ── Alert Items ── */
+.alert-list{display:flex;flex-direction:column;gap:6px}
+.alert-item{
+  display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);
+  border:1px solid var(--line);background:var(--panel);font-size:12px;cursor:pointer;transition:all var(--transition);
+}
+.alert-item:hover{box-shadow:var(--shadow)}
+.alert-item.critical{border-left:3px solid var(--bad);background:var(--bad-bg)}
+.alert-item.warning{border-left:3px solid var(--warn);background:var(--warn-bg)}
+.alert-item.info{border-left:3px solid var(--info);background:var(--info-bg)}
+.alert-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.alert-content{flex:1;min-width:0}
+.alert-title{font-weight:700;font-size:12px}
+.alert-desc{font-size:11px;color:var(--muted);margin-top:2px}
+.alert-time{font-size:10px;color:var(--light);margin-top:3px}
+.alert-action{font-size:11px;font-weight:600;color:var(--brand);margin-top:4px;cursor:pointer}
+.alert-action:hover{text-decoration:underline}
+
+/* ── AI Summary Box ── */
+.ai-box{
+  background:linear-gradient(135deg, var(--brand-light), var(--panel));
+  border:1px solid rgba(0,200,83,.2);border-radius:var(--radius);padding:16px;margin-bottom:16px;
+}
+[data-theme="dark"] .ai-box{background:linear-gradient(135deg, rgba(0,200,83,.06), var(--panel))}
+.ai-box-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.ai-box-head .ai-icon{font-size:14px}
+.ai-box-head .ai-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--brand-dark)}
+.ai-box-body{font-size:12px;line-height:1.6;color:var(--text2)}
+.ai-box-body strong{color:var(--text)}
+.ai-box-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.ai-chip{
+  font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;border:1px solid var(--line);
+  background:var(--panel);cursor:pointer;transition:all var(--transition);
+}
+.ai-chip:hover{background:var(--brand);color:#fff;border-color:var(--brand)}
+
+/* ── Chips / Tags ── */
+.chip{font-size:10px;font-weight:600;padding:2px 8px;border-radius:12px;display:inline-flex;align-items:center;gap:3px}
+.chip.green{background:var(--ok-bg);color:#1B5E20} .chip.red{background:var(--bad-bg);color:#B71C1C}
+.chip.orange{background:var(--warn-bg);color:#E65100} .chip.blue{background:var(--info-bg);color:#0D47A1}
+.chip.gray{background:var(--panel2);color:var(--muted)}
+[data-theme="dark"] .chip.green{color:var(--good)} [data-theme="dark"] .chip.red{color:var(--bad)}
+[data-theme="dark"] .chip.orange{color:var(--warn)} [data-theme="dark"] .chip.blue{color:var(--info)}
+
+/* ── Detail Panel (slide-in) ── */
+.detail-panel{
+  position:fixed;right:0;top:0;bottom:0;width:420px;max-width:100vw;background:var(--panel);
+  border-left:1px solid var(--line);box-shadow:var(--shadow-xl);z-index:200;
+  transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.detail-panel.open{transform:translateX(0)}
+.dp-head{padding:16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);flex-shrink:0}
+.dp-head h3{font-size:15px;font-weight:700}
+.dp-head .dp-close{width:32px;height:32px;border-radius:var(--radius-xs);display:flex;align-items:center;justify-content:center;font-size:16px;transition:background var(--transition)}
+.dp-head .dp-close:hover{background:var(--panel2)}
+.dp-body{flex:1;overflow-y:auto;padding:16px}
+.dp-section{margin-bottom:16px}
+.dp-section-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:8px}
+.dp-kv{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.dp-kv-item{padding:8px 10px;background:var(--panel2);border-radius:var(--radius-xs)}
+.dp-kv-item .kv-label{font-size:10px;color:var(--muted)}
+.dp-kv-item .kv-value{font-size:13px;font-weight:700;margin-top:1px}
+.dp-panel-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:190}
+.dp-panel-overlay.open{display:block}
+
+/* ── Session History Table ── */
+.session-table{width:100%;border-collapse:collapse;font-size:11px}
+.session-table th{text-align:left;font-weight:700;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.3px;padding:6px 8px;border-bottom:2px solid var(--line)}
+.session-table td{padding:8px;border-bottom:1px solid var(--line);vertical-align:middle}
+.session-table tr:hover{background:var(--panel2)}
+.session-table .energy-bar{display:inline-block;height:5px;border-radius:99px;vertical-align:middle}
+
+/* ── Upload Area ── */
+.upload-area{
+  border:2px dashed var(--line);border-radius:var(--radius);padding:24px;text-align:center;
+  cursor:pointer;transition:all var(--transition);
+}
+.upload-area:hover{border-color:var(--brand);background:var(--brand-light)}
+.upload-area .upload-icon{font-size:28px;margin-bottom:8px}
+.upload-area .upload-text{font-size:12px;color:var(--muted)}
+.upload-area .upload-text strong{color:var(--text)}
+
+/* ── Report Cards ── */
+.report-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.report-card{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;
+  cursor:pointer;transition:all var(--transition);
+}
+.report-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-2px)}
+.report-card .rc-icon{font-size:24px;margin-bottom:8px}
+.report-card h4{font-size:13px;font-weight:700;margin-bottom:4px}
+.report-card p{font-size:11px;color:var(--muted);line-height:1.5}
+
+/* ── Simple Chart placeholder ── */
+.mini-chart{height:80px;display:flex;align-items:flex-end;gap:3px;padding-top:8px}
+.mini-chart .bar{flex:1;border-radius:3px 3px 0 0;background:var(--brand);opacity:.7;transition:all var(--transition);min-width:4px}
+.mini-chart .bar:hover{opacity:1}
+
+/* ── Trend row ── */
+.trend-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:12px}
+.trend-row:last-child{border-bottom:none}
+.trend-label{flex:1;font-weight:600}
+.trend-value{font-weight:700;font-variant-numeric:tabular-nums}
+.trend-change{font-size:11px;font-weight:600}
+.trend-change.up{color:var(--good)} .trend-change.down{color:var(--bad)} .trend-change.flat{color:var(--muted)}
+
+/* ── Toast ── */
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--text);color:var(--bg);padding:10px 20px;border-radius:var(--radius);
+  font-size:12px;font-weight:600;z-index:9999;opacity:0;transition:all .3s;
+  box-shadow:var(--shadow-xl);
+}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+
+/* ── Schedule / Gantt ── */
+.sch-form{display:flex;gap:8px;flex-wrap:wrap;align-items:end;padding:14px 16px;background:var(--panel2);border-radius:var(--radius-sm);margin-bottom:14px}
+.sch-form .field{display:flex;flex-direction:column;gap:2px}
+.sch-form .field label{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
+.sch-form .field input,.sch-form .field select{font-size:11px;padding:6px 8px;min-width:80px}
+.gantt-wrap{overflow-x:auto;padding:4px 0}
+.gantt-header{display:flex;border-bottom:2px solid var(--line);padding:0 0 4px;margin-bottom:2px}
+.gantt-hour-labels{display:flex;flex:1;margin-left:130px}
+.gantt-hour-label{flex:1;font-size:9px;font-weight:600;color:var(--muted);text-align:center;min-width:28px}
+.gantt-row{display:flex;align-items:center;padding:3px 0;border-bottom:1px solid var(--line);min-height:34px;position:relative}
+.gantt-row:hover{background:var(--panel2)}
+.gantt-row.has-pattern-alert{background:var(--warn-bg)}
+.gantt-vehicle{width:130px;flex-shrink:0;padding-right:8px}
+.gantt-vehicle .gv-id{font-size:11px;font-weight:700}
+.gantt-vehicle .gv-meta{font-size:9px;color:var(--muted)}
+.gantt-bars{flex:1;position:relative;height:26px;min-width:336px}
+.gantt-bar{position:absolute;height:20px;top:3px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;cursor:pointer;transition:all var(--transition);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 4px}
+.gantt-bar:hover{filter:brightness(1.1);box-shadow:0 2px 8px rgba(0,0,0,.2);z-index:2;transform:scaleY(1.15)}
+.gantt-bar.ready{background:var(--good)} .gantt-bar.charging{background:var(--info)}
+.gantt-bar.risk{background:var(--warn)} .gantt-bar.problem{background:var(--bad)}
+.gantt-bar.scheduled{background:rgba(33,150,243,.5);border:1.5px dashed rgba(33,150,243,.9)}
+.gantt-bar.pattern-expected{background:rgba(0,200,83,.15);border:1.5px dashed rgba(0,200,83,.5)}
+.gantt-bar.pattern-missing{background:rgba(244,67,54,.12);border:2px dashed rgba(244,67,54,.6);animation:pulse-bar 2s infinite}
+@keyframes pulse-bar{0%,100%{opacity:1}50%{opacity:.5}}
+.gantt-now{position:absolute;top:0;bottom:0;width:2px;background:var(--bad);z-index:3;pointer-events:none}
+.gantt-now::after{content:'Nu';position:absolute;top:-14px;left:-8px;font-size:8px;font-weight:700;color:var(--bad)}
+.sch-list{display:flex;flex-direction:column;gap:4px;margin-top:12px}
+.sch-item{display:grid;grid-template-columns:90px 1fr 70px 70px 60px 70px 40px;gap:6px;align-items:center;padding:8px 10px;border-radius:var(--radius-xs);border:1px solid var(--line);background:var(--panel);font-size:11px}
+.sch-item:hover{background:var(--panel2)}
+@media(max-width:768px){
+  .sch-item{grid-template-columns:80px 1fr 60px 60px 40px;font-size:10px}
+  .sch-item .sch-dep,.sch-item .sch-kwh{display:none}
+  .gantt-vehicle{width:90px}
+}
+.sch-readiness{font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;text-align:center}
+.sch-readiness.ready{background:var(--ok-bg);color:var(--good)}
+.sch-readiness.likely{background:var(--info-bg);color:var(--info)}
+.sch-readiness.at-risk{background:var(--warn-bg);color:var(--warn)}
+.sch-readiness.unlikely{background:var(--bad-bg);color:var(--bad)}
+.sch-delete{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted);cursor:pointer;transition:all var(--transition)}
+.sch-delete:hover{background:var(--bad-bg);color:var(--bad)}
+
+/* ── Pattern Alert ── */
+.pattern-alert{display:flex;gap:10px;padding:12px;border-radius:var(--radius-sm);border:1px solid;margin-bottom:8px;font-size:12px}
+.pattern-alert.anomaly{background:var(--warn-bg);border-color:rgba(255,152,0,.3)}
+.pattern-alert.critical-pattern{background:var(--bad-bg);border-color:rgba(244,67,54,.3)}
+.pattern-alert .pa-icon{font-size:18px;flex-shrink:0}
+.pattern-alert .pa-content{flex:1}
+.pattern-alert .pa-title{font-weight:700;font-size:12px;margin-bottom:2px}
+.pattern-alert .pa-desc{font-size:11px;color:var(--text2);line-height:1.5}
+.pattern-alert .pa-pattern{font-size:10px;color:var(--muted);margin-top:4px;font-style:italic}
+.pattern-alert .pa-action{font-size:11px;font-weight:600;color:var(--brand);margin-top:4px;cursor:pointer}
+.pattern-alert .pa-action:hover{text-decoration:underline}
+
+/* ── Animations ── */
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeIn .35s ease-out both}
+.fade-in-d1{animation-delay:.05s} .fade-in-d2{animation-delay:.1s} .fade-in-d3{animation-delay:.15s} .fade-in-d4{animation-delay:.2s}
+
+/* ── Empty State ── */
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty-state .empty-icon{font-size:40px;margin-bottom:12px;opacity:.5}
+.empty-state h3{font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px}
+.empty-state p{font-size:12px;line-height:1.5}
+
+/* ── Grid layouts ── */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:768px){.grid-2{grid-template-columns:1fr}}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+@media(max-width:900px){.grid-3{grid-template-columns:1fr 1fr}}
+@media(max-width:500px){.grid-3{grid-template-columns:1fr}}
+
+/* ── Timeline (for session details) ── */
+.session-timeline{display:flex;flex-direction:column;gap:0}
+.st-event{display:flex;gap:10px;padding:6px 0;position:relative}
+.st-event::before{content:'';position:absolute;left:10px;top:24px;bottom:-6px;width:1px;background:var(--line)}
+.st-event:last-child::before{display:none}
+.st-dot{width:20px;height:20px;border-radius:50%;border:2px solid var(--line);background:var(--panel);display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;z-index:1}
+.st-dot.green{border-color:var(--good);color:var(--good)} .st-dot.red{border-color:var(--bad);color:var(--bad)}
+.st-dot.orange{border-color:var(--warn);color:var(--warn)} .st-dot.blue{border-color:var(--info);color:var(--info)}
+.st-content{flex:1;min-width:0}
+.st-content .st-title{font-size:11px;font-weight:600}
+.st-content .st-time{font-size:10px;color:var(--muted)}
+.st-content .st-detail{font-size:10px;color:var(--muted);margin-top:1px}
+
+/* ── Tab bar (for detail panel) ── */
+.tab-bar{display:flex;gap:0;border-bottom:2px solid var(--line);margin-bottom:12px}
+.tab-btn{padding:8px 14px;font-size:11px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all var(--transition)}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--brand);border-bottom-color:var(--brand)}
+</style>
+</head>
+<body>
+
+<!-- Mobile hamburger -->
+<button class="hamburger" id="hamburgerBtn">☰</button>
+<div class="mobile-overlay" id="mobileOverlay"></div>
+
+<div class="app">
+  <!-- ═══ SIDEBAR ═══ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="logo">Charge<span>Node</span></div>
+      <span class="badge-fleet">Fleet</span>
+    </div>
+    <div class="sidebar-org">
+      <select id="orgSelect">
+        <option>Hemtjänsten Varberg</option>
+        <option>Kalmar kommun</option>
+        <option>Region Kalmar Län</option>
+      </select>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-label">Operativt</div>
+        <div class="nav-item active" data-view="dashboard">
+          <span class="nav-icon">🏠</span>Översikt
+          <span class="nav-badge red" id="navAlertBadge" style="display:none">0</span>
+        </div>
+        <div class="nav-item" data-view="vehicles">
+          <span class="nav-icon">🚐</span>Fordon
+          <span class="nav-badge blue" id="navVehicleCount">0</span>
+        </div>
+        <div class="nav-item" data-view="alerts">
+          <span class="nav-icon">🔔</span>Avvikelser
+          <span class="nav-badge orange" id="navAlertCount">0</span>
+        </div>
+        <div class="nav-item" data-view="schedule">
+          <span class="nav-icon">📅</span>Schema
+          <span class="nav-badge green" id="navSchCount">0</span>
+        </div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-section-label">Analys</div>
+        <div class="nav-item" data-view="history">
+          <span class="nav-icon">📊</span>Laddhistorik
+        </div>
+        <div class="nav-item" data-view="reports">
+          <span class="nav-icon">📋</span>Rapporter
+        </div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-section-label">Data</div>
+        <div class="nav-item" data-view="upload">
+          <span class="nav-icon">📤</span>Ladda upp sessioner
+        </div>
+        <div class="nav-item" data-view="settings">
+          <span class="nav-icon">⚙️</span>Inställningar
+        </div>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="theme-toggle" id="themeToggle">
+        <span id="themeIcon">☀️</span>
+        <span id="themeLabel">Ljust läge</span>
+      </div>
+      <div style="margin-top:6px;font-size:10px">ChargeNode Fleet v1.0</div>
+    </div>
+  </aside>
+
+  <!-- ═══ MAIN ═══ -->
+  <div class="main">
+    <header class="main-header">
+      <div>
+        <h1 id="viewTitle">Översikt</h1>
+        <div class="sub" id="viewSubtitle">Fordonsflottans laddstatus — realtid</div>
+      </div>
+      <div class="header-actions">
+        <button class="btn" id="btnRefresh">↻ Uppdatera</button>
+        <button class="btn primary" id="btnAiSummary">🤖 AI Sammanfattning</button>
+      </div>
+    </header>
+
+    <div class="main-content">
+
+      <!-- ═══════════ VIEW: DASHBOARD ═══════════ -->
+      <section class="view-section active" id="view-dashboard">
+
+        <!-- AI Morning Summary -->
+        <div class="ai-box fade-in" id="aiSummaryBox">
+          <div class="ai-box-head">
+            <span class="ai-icon">🤖</span>
+            <span class="ai-label">ChargeNode AI — Morgonsammanfattning</span>
+          </div>
+          <div class="ai-box-body" id="aiSummaryContent">Laddar analys...</div>
+          <div class="ai-box-actions" id="aiSummaryActions"></div>
+        </div>
+
+        <!-- Hero Stats -->
+        <div class="readiness-hero" id="heroStats"></div>
+
+        <!-- Two column: Vehicles + Alerts -->
+        <div class="grid-2" style="align-items:start">
+          <div>
+            <div class="card fade-in fade-in-d1">
+              <div class="card-head">
+                <div>
+                  <h3>Fordonsflottan</h3>
+                  <div class="meta">Sorterat efter prioritet — problem först</div>
+                </div>
+                <div style="display:flex;gap:6px">
+                  <button class="btn" style="padding:4px 8px;font-size:11px" id="btnFilterAll">Alla</button>
+                  <button class="btn" style="padding:4px 8px;font-size:11px" id="btnFilterIssues">⚠ Problem</button>
+                </div>
+              </div>
+              <div class="card-body compact" style="max-height:500px;overflow-y:auto">
+                <div class="vehicle-list" id="vehicleList"></div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="card fade-in fade-in-d2">
+              <div class="card-head">
+                <div>
+                  <h3>Aktiva avvikelser</h3>
+                  <div class="meta">Kräver uppmärksamhet</div>
+                </div>
+                <span class="chip red" id="alertCountChip">0</span>
+              </div>
+              <div class="card-body compact" style="max-height:340px;overflow-y:auto">
+                <div class="alert-list" id="dashAlertList"></div>
+              </div>
+            </div>
+
+            <!-- Quick Trend -->
+            <div class="card fade-in fade-in-d3" style="margin-top:12px">
+              <div class="card-head">
+                <div>
+                  <h3>Veckans laddning</h3>
+                  <div class="meta">Senaste 7 dagar</div>
+                </div>
+              </div>
+              <div class="card-body compact">
+                <div class="mini-chart" id="weekChart"></div>
+                <div style="display:flex;justify-content:space-between;margin-top:6px">
+                  <span style="font-size:10px;color:var(--muted)">mån</span>
+                  <span style="font-size:10px;color:var(--muted)">sön</span>
+                </div>
+                <div class="trend-row" style="margin-top:8px;border-bottom:none;padding-bottom:0">
+                  <span class="trend-label">Total energi</span>
+                  <span class="trend-value" id="weekTotalKwh">0 kWh</span>
+                  <span class="trend-change up" id="weekTrend">—</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════ VIEW: VEHICLES ═══════════ -->
+      <section class="view-section" id="view-vehicles">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h3>Alla fordon</h3>
+              <div class="meta" id="vehiclesMeta">—</div>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="search" placeholder="Sök reg.nr, modell..." id="vehicleSearch" style="font-size:12px;padding:5px 10px;width:180px">
+              <button class="btn primary" style="padding:5px 10px;font-size:11px" id="btnAddVehicle">+ Lägg till</button>
+            </div>
+          </div>
+          <div class="card-body" style="padding:0">
+            <div style="overflow-x:auto">
+              <table class="session-table" id="vehicleTable" style="min-width:700px">
+                <thead>
+                  <tr>
+                    <th>Status</th>
+                    <th>Reg.nr</th>
+                    <th>Modell</th>
+                    <th>SoC</th>
+                    <th>Senaste laddning</th>
+                    <th>Nästa avgång</th>
+                    <th>Plats</th>
+                  </tr>
+                </thead>
+                <tbody id="vehicleTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════ VIEW: ALERTS ═══════════ -->
+      <section class="view-section" id="view-alerts">
+        <div class="ai-box" style="margin-bottom:16px">
+          <div class="ai-box-head">
+            <span class="ai-icon">🤖</span>
+            <span class="ai-label">AI Avvikelseanalys</span>
+          </div>
+          <div class="ai-box-body" id="alertsAiBody">Analyserar avvikelser...</div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <div><h3>Alla avvikelser</h3><div class="meta">Senaste 30 dagarna</div></div>
+            <div style="display:flex;gap:6px">
+              <button class="btn" style="padding:4px 8px;font-size:11px" data-alertfilter="all">Alla</button>
+              <button class="btn" style="padding:4px 8px;font-size:11px" data-alertfilter="active">Aktiva</button>
+              <button class="btn" style="padding:4px 8px;font-size:11px" data-alertfilter="resolved">Lösta</button>
+            </div>
+          </div>
+          <div class="card-body compact">
+            <div class="alert-list" id="fullAlertList"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════ VIEW: SCHEDULE ═══════════ -->
+      <section class="view-section" id="view-schedule">
+        <!-- AI Pattern Detection Summary -->
+        <div class="ai-box fade-in" id="patternAiBox">
+          <div class="ai-box-head">
+            <span class="ai-icon">🧠</span>
+            <span class="ai-label">AI Mönsterigenkänning</span>
+          </div>
+          <div class="ai-box-body" id="patternAiContent">Analyserar historiska laddningsmönster...</div>
+        </div>
+
+        <!-- Pattern Alerts -->
+        <div id="patternAlerts" style="margin-bottom:16px"></div>
+
+        <!-- Gantt Chart -->
+        <div class="card fade-in fade-in-d1" style="margin-bottom:16px">
+          <div class="card-head">
+            <div>
+              <h3>Laddschema — Gantt</h3>
+              <div class="meta">Schemalagda sessioner + AI-förväntade mönster (streckad)</div>
+            </div>
+            <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">
+              <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:12px;height:8px;background:var(--info);border-radius:2px;display:inline-block"></span>Schema</span>
+              <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:12px;height:8px;background:rgba(0,200,83,.3);border:1px dashed var(--good);border-radius:2px;display:inline-block"></span>Förväntat</span>
+              <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:12px;height:8px;background:rgba(244,67,54,.15);border:1.5px dashed var(--bad);border-radius:2px;display:inline-block"></span>Saknat</span>
+            </div>
+          </div>
+          <div class="card-body compact">
+            <div class="gantt-wrap" id="ganttWrap"></div>
+          </div>
+        </div>
+
+        <!-- Add Schedule Form -->
+        <div class="card fade-in fade-in-d2" style="margin-bottom:16px">
+          <div class="card-head">
+            <div><h3>Lägg till schema</h3><div class="meta">Ange förväntad laddtid och behov per fordon</div></div>
+          </div>
+          <div class="card-body compact">
+            <div class="sch-form" id="schForm">
+              <div class="field">
+                <label>Fordon</label>
+                <select id="schVehicle" style="min-width:110px"></select>
+              </div>
+              <div class="field">
+                <label>Ankomst</label>
+                <input type="time" id="schArrival" value="18:00">
+              </div>
+              <div class="field">
+                <label>Avgång</label>
+                <input type="time" id="schDeparture" value="06:30">
+              </div>
+              <div class="field">
+                <label>Behov (kWh)</label>
+                <input type="number" id="schNeedKwh" value="35" min="1" max="200" style="width:70px">
+              </div>
+              <div class="field">
+                <label>Prioritet</label>
+                <select id="schPriority">
+                  <option value="normal">Normal</option>
+                  <option value="high">Hög</option>
+                  <option value="critical">Kritisk</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Dagar</label>
+                <select id="schDays">
+                  <option value="weekdays">Vardagar (mån–fre)</option>
+                  <option value="daily">Varje dag</option>
+                  <option value="weekends">Helger</option>
+                  <option value="once">Engång (idag)</option>
+                </select>
+              </div>
+              <button class="btn primary" style="padding:6px 14px;font-size:11px;margin-top:auto" id="btnAddSchedule">+ Lägg till</button>
+            </div>
+            <div class="ai-box" id="schAiSuggestion" style="margin:10px 0 0;display:none">
+              <div class="ai-box-head"><span class="ai-icon">🤖</span><span class="ai-label">AI Schemaförslag</span></div>
+              <div class="ai-box-body" id="schAiContent"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Schedule List -->
+        <div class="card fade-in fade-in-d3">
+          <div class="card-head">
+            <div><h3>Aktiva scheman</h3><div class="meta" id="schListMeta">—</div></div>
+            <button class="btn" style="padding:4px 10px;font-size:11px" id="btnClearSchedules">Rensa alla</button>
+          </div>
+          <div class="card-body compact">
+            <div id="scheduleList"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════ VIEW: HISTORY ═══════════ -->
+      <section class="view-section" id="view-history">
+        <div class="grid-2" style="margin-bottom:16px">
+          <div class="card">
+            <div class="card-head"><div><h3>Energitrender</h3><div class="meta">kWh per dag, senaste 30 dagarna</div></div></div>
+            <div class="card-body">
+              <div class="mini-chart" id="historyEnergyChart" style="height:120px"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div><h3>Nyckeltal — 30 dagar</h3></div></div>
+            <div class="card-body">
+              <div class="trend-row"><span class="trend-label">Total energi</span><span class="trend-value" id="hist30kwh">—</span></div>
+              <div class="trend-row"><span class="trend-label">Genomsnitt per dag</span><span class="trend-value" id="hist30avg">—</span></div>
+              <div class="trend-row"><span class="trend-label">Sessioner totalt</span><span class="trend-value" id="hist30sess">—</span></div>
+              <div class="trend-row"><span class="trend-label">Missade laddningar</span><span class="trend-value" id="hist30missed" style="color:var(--bad)">—</span></div>
+              <div class="trend-row"><span class="trend-label">Uppskattad kostnad</span><span class="trend-value" id="hist30cost">—</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <div><h3>Laddningssessioner</h3><div class="meta">Alla registrerade sessioner</div></div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <select id="histVehicleFilter" style="font-size:11px;padding:4px 8px"><option value="all">Alla fordon</option></select>
+              <select id="histPeriodFilter" style="font-size:11px;padding:4px 8px">
+                <option value="7">7 dagar</option><option value="30" selected>30 dagar</option><option value="90">90 dagar</option>
+              </select>
+            </div>
+          </div>
+          <div class="card-body" style="padding:0;overflow-x:auto">
+            <table class="session-table" id="historyTable" style="min-width:650px">
+              <thead>
+                <tr><th>Datum</th><th>Fordon</th><th>Plats</th><th>Energi</th><th>Duration</th><th>Källa</th><th>Status</th></tr>
+              </thead>
+              <tbody id="historyTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════ VIEW: REPORTS ═══════════ -->
+      <section class="view-section" id="view-reports">
+        <div class="ai-box" style="margin-bottom:16px">
+          <div class="ai-box-head">
+            <span class="ai-icon">🤖</span>
+            <span class="ai-label">AI Rapportassistent</span>
+          </div>
+          <div class="ai-box-body">Jag kan hjälpa dig generera hållbarhetsrapporter, kostnadssammanställningar och avvikelseanalyser. Välj en rapport nedan eller beskriv vad du behöver.</div>
+        </div>
+        <div class="report-grid" id="reportGrid"></div>
+      </section>
+
+      <!-- ═══════════ VIEW: UPLOAD ═══════════ -->
+      <section class="view-section" id="view-upload">
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-head">
+            <div>
+              <h3>Ladda upp externa laddningssessioner</h3>
+              <div class="meta">CSV eller manuell inmatning — för komplett rapportering</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <p style="font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.6">
+              Om fordon laddas utanför ChargeNode-nätverket (t.ex. hemma, publik snabbladdare) kan du ladda upp sessionerna här för komplett statistik och CO₂-rapportering.
+            </p>
+            <div class="upload-area" id="uploadArea">
+              <div class="upload-icon">📤</div>
+              <div class="upload-text"><strong>Dra och släpp CSV-fil här</strong><br>eller klicka för att välja fil</div>
+              <div style="margin-top:8px;font-size:10px;color:var(--light)">Format: datum, fordon, kWh, plats, källa</div>
+            </div>
+            <div style="margin-top:16px">
+              <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:8px">ELLER — lägg till manuellt</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end">
+                <div style="flex:1;min-width:100px">
+                  <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Fordon</label>
+                  <select id="uploadVehicle" style="width:100%;font-size:11px;padding:6px 8px"></select>
+                </div>
+                <div style="flex:1;min-width:80px">
+                  <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Datum</label>
+                  <input type="date" id="uploadDate" style="width:100%;font-size:11px;padding:6px 8px">
+                </div>
+                <div style="min-width:70px">
+                  <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">kWh</label>
+                  <input type="number" id="uploadKwh" placeholder="35" style="width:70px;font-size:11px;padding:6px 8px">
+                </div>
+                <div style="flex:1;min-width:100px">
+                  <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Plats</label>
+                  <input type="text" id="uploadLocation" placeholder="Hemma, Ionity..." style="width:100%;font-size:11px;padding:6px 8px">
+                </div>
+                <button class="btn primary" style="padding:6px 14px;font-size:11px" id="btnManualUpload">Lägg till</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><h3>Uppladdade sessioner</h3><div class="meta">Extern laddning utanför ChargeNode</div></div></div>
+          <div class="card-body compact">
+            <div id="uploadedSessionsList" class="empty-state">
+              <div class="empty-icon">📭</div>
+              <h3>Inga uppladdade sessioner</h3>
+              <p>Ladda upp CSV eller lägg till manuellt ovan.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════ VIEW: SETTINGS ═══════════ -->
+      <section class="view-section" id="view-settings">
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-head"><div><h3>Organisation</h3></div></div>
+            <div class="card-body">
+              <div class="dp-kv" style="gap:10px">
+                <div class="dp-kv-item"><div class="kv-label">Namn</div><div class="kv-value">Hemtjänsten Varberg</div></div>
+                <div class="dp-kv-item"><div class="kv-label">Kundnummer</div><div class="kv-value">10104</div></div>
+                <div class="dp-kv-item"><div class="kv-label">Org.nummer</div><div class="kv-value">212000-0746</div></div>
+                <div class="dp-kv-item"><div class="kv-label">Antal fordon</div><div class="kv-value" id="settingsVehicleCount">—</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div><h3>Notifieringar</h3></div></div>
+            <div class="card-body">
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer">
+                  <input type="checkbox" checked> Larma om fordon ej laddat till mål-SoC 2h före avgång
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer">
+                  <input type="checkbox" checked> Larma om laddningssession avbryts oväntat
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer">
+                  <input type="checkbox" checked> Daglig morgonsammanfattning via e-post
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer">
+                  <input type="checkbox"> Veckorapport automatiskt
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div><h3>Laddmål (standard)</h3></div></div>
+            <div class="card-body">
+              <p style="font-size:11px;color:var(--muted);margin-bottom:10px">Standardvärden som används för readiness-beräkning om inget annat anges per fordon.</p>
+              <div style="display:flex;gap:12px;flex-wrap:wrap">
+                <div>
+                  <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Mål-SoC (%)</label>
+                  <input type="number" value="80" min="50" max="100" style="width:80px;font-size:12px;padding:6px">
+                </div>
+                <div>
+                  <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Avgångstid (standard)</label>
+                  <input type="time" value="06:30" style="width:100px;font-size:12px;padding:6px">
+                </div>
+                <div>
+                  <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Min SoC för larm</label>
+                  <input type="number" value="40" min="10" max="80" style="width:80px;font-size:12px;padding:6px">
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div><h3>CO₂-inställningar</h3></div></div>
+            <div class="card-body">
+              <p style="font-size:11px;color:var(--muted);margin-bottom:10px">Faktor för CO₂-besparing jämfört med dieselfordon (g CO₂/km).</p>
+              <div style="display:flex;gap:12px;flex-wrap:wrap">
+                <div>
+                  <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Diesel-referens (g/km)</label>
+                  <input type="number" value="220" style="width:80px;font-size:12px;padding:6px">
+                </div>
+                <div>
+                  <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Elmix (g CO₂/kWh)</label>
+                  <input type="number" value="45" style="width:80px;font-size:12px;padding:6px">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div><!-- /main-content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- Detail Panel -->
+<div class="dp-panel-overlay" id="dpOverlay"></div>
+<div class="detail-panel" id="detailPanel">
+  <div class="dp-head">
+    <div>
+      <h3 id="dpTitle">—</h3>
+      <div class="sub" id="dpSubtitle" style="font-size:11px;color:var(--muted)">—</div>
+    </div>
+    <button class="dp-close" id="dpClose">✕</button>
+  </div>
+  <div class="dp-body" id="dpBody"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════
+   DATA MODEL & STATE
+   ═══════════════════════════════════════════════════ */
+const NOW = new Date();
+const HOUR = NOW.getHours();
+
+// Vehicle fleet for Hemtjänsten Varberg
+const vehicles = [
+  {id:"HBG 01A",model:"VW ID.Buzz",batteryKwh:77,soc:92,targetSoc:80,status:"ready",departure:"06:30",location:"Depå Varberg",lastCharge:"2026-02-27 23:40",lastKwh:38,driver:"Anna L.",lat:57.107,lng:12.252},
+  {id:"HBG 02B",model:"Renault Kangoo E-Tech",batteryKwh:45,soc:78,targetSoc:80,status:"charging",departure:"06:30",location:"Depå Varberg",lastCharge:"2026-02-28 01:15",lastKwh:22,driver:"Erik S.",lat:57.107,lng:12.252},
+  {id:"HBG 03C",model:"VW ID.Buzz",batteryKwh:77,soc:45,targetSoc:80,status:"risk",departure:"06:30",location:"Depå Varberg",lastCharge:"2026-02-27 18:00",lastKwh:12,driver:"Maria K.",notes:"Kabel ej ansluten — förare glömt?",lat:57.107,lng:12.252},
+  {id:"HBG 04D",model:"Peugeot e-Partner",batteryKwh:50,soc:15,targetSoc:80,status:"problem",departure:"07:00",location:"Depå Varberg",lastCharge:null,lastKwh:0,driver:"Johan P.",notes:"Laddfel — session avbruten kl 22:14. Felkod: EVSE_TIMEOUT",lat:57.107,lng:12.252},
+  {id:"HBG 05E",model:"Renault Kangoo E-Tech",batteryKwh:45,soc:88,targetSoc:80,status:"ready",departure:"07:00",location:"Depå Varberg",lastCharge:"2026-02-27 22:10",lastKwh:30,driver:"Sara B.",lat:57.107,lng:12.252},
+  {id:"HBG 06F",model:"VW ID.Buzz",batteryKwh:77,soc:67,targetSoc:80,status:"charging",departure:"06:30",location:"Depå Varberg",lastCharge:"2026-02-28 02:30",lastKwh:44,driver:"Olle M.",lat:57.107,lng:12.252},
+  {id:"HBG 07G",model:"Peugeot e-Partner",batteryKwh:50,soc:95,targetSoc:80,status:"ready",departure:"07:00",location:"Depå Varberg",lastCharge:"2026-02-27 21:00",lastKwh:35,driver:"Lisa A.",lat:57.107,lng:12.252},
+  {id:"HBG 08H",model:"Renault Kangoo E-Tech",batteryKwh:45,soc:82,targetSoc:80,status:"ready",departure:"06:30",location:"Depå Varberg",lastCharge:"2026-02-27 23:55",lastKwh:28,driver:"Tomas R.",lat:57.107,lng:12.252},
+  {id:"HBG 09I",model:"VW ID.Buzz",batteryKwh:77,soc:58,targetSoc:80,status:"risk",departure:"07:00",location:"Hemma — förare",lastCharge:"2026-02-27 20:00",lastKwh:18,driver:"Karin F.",notes:"Laddar hemma — ingen realtidsdata",lat:57.11,lng:12.28},
+  {id:"HBG 10J",model:"Peugeot e-Partner",batteryKwh:50,soc:0,targetSoc:80,status:"offline",departure:"07:00",location:"Okänd",lastCharge:"2026-02-25 19:30",lastKwh:25,driver:"Per G.",notes:"Ingen kontakt sedan 2 dagar",lat:null,lng:null},
+];
+
+// Alerts
+const alerts = [
+  {id:1,type:"critical",vehicle:"HBG 04D",title:"Laddfel — session avbruten",desc:"Session avbröts kl 22:14 med felkod EVSE_TIMEOUT. Fordon har 15% SoC och avgår 07:00. Kritiskt.",time:"2026-02-28 03:15",status:"active",suggestion:"Kontakta nattjouren eller byt till reservfordon. Felet kan bero på laddarens kontaktor."},
+  {id:2,type:"critical",vehicle:"HBG 10J",title:"Ingen kontakt — 2 dagar",desc:"Fordon har inte rapporterat position eller SoC sedan 2026-02-26. Senaste kända plats: Varberg centrum.",time:"2026-02-28 00:00",status:"active",suggestion:"Kontakta förare Per G. för att verifiera fordonets status."},
+  {id:3,type:"warning",vehicle:"HBG 03C",title:"Kabel ej ansluten",desc:"Fordon parkerat på depå sedan 18:00 men kabel ej inkopplad. SoC 45%, mål 80%, avgång 06:30.",time:"2026-02-28 02:00",status:"active",suggestion:"Skicka påminnelse till förare Maria K. eller kontakta nattjour."},
+  {id:4,type:"warning",vehicle:"HBG 09I",title:"Hemladdning — ingen realtidsdata",desc:"Fordon laddar hemma hos förare. Ingen sessionsdata tillgänglig — status okänd.",time:"2026-02-27 20:30",status:"active",suggestion:"Bed förare Karin F. bekräfta SoC via app. Lägg till som extern session imorgon."},
+  {id:5,type:"info",vehicle:"HBG 06F",title:"Sent ansluten — laddar nu",desc:"Kabel anslöts kl 02:30 (planerad ankomst 18:00). Fordon hinner sannolikt ladda till 80% till 06:30.",time:"2026-02-28 02:35",status:"active",suggestion:"Övervaka laddkurva — vid normal hastighet (7 kW) nås 80% ~05:45."},
+  {id:6,type:"info",vehicle:"—",title:"Veckosammanfattning tillgänglig",desc:"Ny veckorapport genererad för v9 med 97.5% readiness rate.",time:"2026-02-27 08:00",status:"resolved"},
+];
+
+// Session history
+const sessionHistory = [];
+function generateSessions(){
+  const locations = ["Depå Varberg","Hemma","Ionity Falkenberg","ChargeNode Kontor","Circle K Varberg"];
+  const sources = ["ChargeNode","ChargeNode","Extern","ChargeNode","Extern"];
+  for(let d=0;d<30;d++){
+    vehicles.forEach(v=>{
+      if(Math.random()>.15){
+        const date = new Date(NOW);
+        date.setDate(date.getDate()-d);
+        const kwh = Math.round(15+Math.random()*40);
+        const dur = Math.round(kwh/7*60+Math.random()*30);
+        const locIdx = Math.random()>.7 ? Math.floor(Math.random()*locations.length) : 0;
+        const status = Math.random()>.92 ? "avbruten" : Math.random()>.95 ? "ofullständig" : "slutförd";
+        sessionHistory.push({
+          date:date.toISOString().split("T")[0],
+          vehicle:v.id,
+          location:locations[locIdx],
+          kwh,
+          durationMin:dur,
+          source:sources[locIdx],
+          status,
+          cost:Math.round(kwh*1.8*100)/100,
+        });
+      }
+    });
+  }
+  sessionHistory.sort((a,b)=>b.date.localeCompare(a.date));
+}
+generateSessions();
+
+let uploadedSessions = [];
+let activeView = "dashboard";
+let vehicleFilter = "all";
+
+/* ═══════════════════════════════════════════════════
+   HELPERS
+   ═══════════════════════════════════════════════════ */
+const el=s=>document.querySelector(s);
+const els=s=>document.querySelectorAll(s);
+function esc(t){const d=document.createElement("div");d.textContent=t;return d.innerHTML}
+
+function toast(msg){
+  const t=el("#toast");t.textContent=msg;t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),2500);
+}
+
+function statusLabel(s){
+  const m={ready:"Redo",charging:"Laddar",risk:"Risk",problem:"Problem",offline:"Offline",unknown:"Okänd"};
+  return m[s]||s;
+}
+function statusClass(s){
+  const m={ready:"green",charging:"blue",risk:"orange",problem:"red",offline:"gray",unknown:"gray"};
+  return m[s]||"gray";
+}
+
+/* ═══════════════════════════════════════════════════
+   NAVIGATION
+   ═══════════════════════════════════════════════════ */
+const viewTitles = {
+  dashboard:["Översikt","Fordonsflottans laddstatus — realtid"],
+  vehicles:["Fordon","Alla fordon i flottan"],
+  alerts:["Avvikelser","Aktiva och historiska avvikelser"],
+  schedule:["Schema","Laddschema, mönster och AI-prediktion"],
+  history:["Laddhistorik","Sessioner, energi och trender"],
+  reports:["Rapporter","CO₂, kostnader och analys"],
+  upload:["Ladda upp sessioner","Extern laddning för komplett rapportering"],
+  settings:["Inställningar","Organisation, notifieringar och mål"],
+};
+
+function setView(view){
+  activeView = view;
+  els(".view-section").forEach(s=>s.classList.remove("active"));
+  const section = el(`#view-${view}`);
+  if(section) section.classList.add("active");
+  els(".nav-item").forEach(n=>n.classList.toggle("active",n.dataset.view===view));
+  const [title,sub] = viewTitles[view]||["—","—"];
+  el("#viewTitle").textContent = title;
+  el("#viewSubtitle").textContent = sub;
+  renderView(view);
+}
+
+els(".nav-item").forEach(n=>n.addEventListener("click",()=>{
+  setView(n.dataset.view);
+  closeSidebar();
+}));
+
+// Mobile sidebar
+function closeSidebar(){el("#sidebar").classList.remove("open");el("#mobileOverlay").classList.remove("open")}
+el("#hamburgerBtn").addEventListener("click",()=>{
+  const sb=el("#sidebar");sb.classList.toggle("open");el("#mobileOverlay").classList.toggle("open");
+});
+el("#mobileOverlay").addEventListener("click",closeSidebar);
+
+// Theme
+let darkMode = localStorage.getItem("cn-fleet-theme")==="dark";
+function applyTheme(){
+  document.documentElement.setAttribute("data-theme",darkMode?"dark":"light");
+  el("#themeIcon").textContent=darkMode?"🌙":"☀️";
+  el("#themeLabel").textContent=darkMode?"Mörkt läge":"Ljust läge";
+}
+el("#themeToggle").addEventListener("click",()=>{darkMode=!darkMode;localStorage.setItem("cn-fleet-theme",darkMode?"dark":"light");applyTheme()});
+applyTheme();
+
+/* ═══════════════════════════════════════════════════
+   RENDER FUNCTIONS
+   ═══════════════════════════════════════════════════ */
+function renderView(view){
+  switch(view){
+    case "dashboard": renderDashboard(); break;
+    case "vehicles": renderVehicles(); break;
+    case "alerts": renderAlerts(); break;
+    case "schedule": renderSchedule(); break;
+    case "history": renderHistory(); break;
+    case "reports": renderReports(); break;
+    case "upload": renderUpload(); break;
+    case "settings": renderSettings(); break;
+  }
+  updateBadges();
+}
+
+function updateBadges(){
+  const activeAlerts = alerts.filter(a=>a.status==="active");
+  const patternCount = getPatternAlertCount();
+  const critical = activeAlerts.filter(a=>a.type==="critical").length + patternCount;
+  const warn = activeAlerts.filter(a=>a.type==="warning").length;
+  const total = activeAlerts.length;
+  
+  const nb = el("#navAlertBadge");
+  if(critical>0){nb.style.display="inline";nb.textContent=critical;nb.className="nav-badge red"}
+  else if(warn>0){nb.style.display="inline";nb.textContent=warn;nb.className="nav-badge orange"}
+  else{nb.style.display="none"}
+
+  el("#navVehicleCount").textContent=vehicles.length;
+  el("#navAlertCount").textContent=total;
+  el("#navSchCount").textContent=schedules.length;
+}
+
+/* ── Dashboard ── */
+function renderDashboard(){
+  const ready = vehicles.filter(v=>v.status==="ready").length;
+  const charging = vehicles.filter(v=>v.status==="charging").length;
+  const risk = vehicles.filter(v=>v.status==="risk").length;
+  const problem = vehicles.filter(v=>v.status==="problem"||v.status==="offline").length;
+  const readyPct = Math.round((ready+charging)/vehicles.length*100);
+
+  // Hero stats
+  el("#heroStats").innerHTML = `
+    <div class="hero-stat ${readyPct>=90?"green":readyPct>=70?"orange":"red"} fade-in">
+      <div class="hs-label">Readiness</div>
+      <div class="hs-value">${readyPct}%</div>
+      <div class="hs-sub">${ready+charging} av ${vehicles.length} redo/laddar</div>
+      <div class="hs-accent"></div>
+    </div>
+    <div class="hero-stat green fade-in fade-in-d1">
+      <div class="hs-label">Redo</div>
+      <div class="hs-value">${ready}</div>
+      <div class="hs-sub">Uppnått mål-SoC</div>
+      <div class="hs-accent"></div>
+    </div>
+    <div class="hero-stat ${risk?"orange":"green"} fade-in fade-in-d2">
+      <div class="hs-label">Risk / Laddar</div>
+      <div class="hs-value">${risk+charging}</div>
+      <div class="hs-sub">${charging} laddar, ${risk} risk</div>
+      <div class="hs-accent"></div>
+    </div>
+    <div class="hero-stat ${problem?"red":"green"} fade-in fade-in-d3">
+      <div class="hs-label">Problem</div>
+      <div class="hs-value">${problem}</div>
+      <div class="hs-sub">Kräver åtgärd</div>
+      <div class="hs-accent"></div>
+    </div>
+  `;
+
+  // AI Summary
+  renderAiSummary();
+
+  // Vehicle list
+  renderDashboardVehicles();
+
+  // Dashboard alerts
+  renderDashboardAlerts();
+
+  // Week chart
+  renderWeekChart();
+}
+
+function renderAiSummary(){
+  const ready = vehicles.filter(v=>v.status==="ready").length;
+  const charging = vehicles.filter(v=>v.status==="charging").length;
+  const risk = vehicles.filter(v=>v.status==="risk");
+  const problem = vehicles.filter(v=>v.status==="problem"||v.status==="offline");
+  const activeA = alerts.filter(a=>a.status==="active"&&a.type==="critical");
+  const patterns = detectPatterns();
+  const criticalPatterns = patterns.filter(p=>p.severity==="critical");
+  const warnPatterns = patterns.filter(p=>p.severity==="warning");
+
+  let html = "";
+  if(problem.length===0 && risk.length===0 && patterns.length===0){
+    html = `Alla <strong>${vehicles.length} fordon</strong> är redo eller på god väg. Inga aktiva problem eller mönsteravvikelser. Flottans readiness ser bra ut inför morgondagens avgångar.`;
+  } else {
+    const parts = [];
+    if(problem.length) parts.push(`<strong style="color:var(--bad)">${problem.length} fordon med problem</strong> som kräver omedelbar åtgärd: ${problem.map(v=>`${v.id} (${v.notes||"okänt fel"})`).join(", ")}.`);
+    if(risk.length) parts.push(`<strong style="color:var(--warn)">${risk.length} fordon med risk</strong>: ${risk.map(v=>`${v.id} — SoC ${v.soc}%, mål ${v.targetSoc}%`).join("; ")}.`);
+    if(charging) parts.push(`${charging} fordon laddar just nu.`);
+    parts.push(`${ready} fordon redo.`);
+    if(criticalPatterns.length || warnPatterns.length){
+      parts.push(`<br><br><strong>🧠 AI Mönsterigenkänning:</strong> `);
+      if(criticalPatterns.length) parts.push(`<strong style="color:var(--bad)">${criticalPatterns.length} kritiska mönsteravvikelser</strong> — ${criticalPatterns[0].title}.`);
+      if(warnPatterns.length) parts.push(`${warnPatterns.length} varningar baserade på historiska laddningsmönster.`);
+    }
+    if(activeA.length) parts.push(`<br><strong>⚡ Rekommendation:</strong> Prioritera ${activeA[0].vehicle} — ${activeA[0].suggestion}`);
+    html = parts.join(" ");
+  }
+
+  el("#aiSummaryContent").innerHTML = html;
+  
+  const actions = [];
+  if(problem.length) actions.push({label:"Visa problem",view:"alerts"});
+  if(risk.length) actions.push({label:"Visa riskfordon",view:"vehicles"});
+  if(patterns.length) actions.push({label:"🧠 Mönsteravvikelser",view:"schedule"});
+  actions.push({label:"Veckorapport",view:"reports"});
+  actions.push({label:"Laddhistorik",view:"history"});
+  
+  el("#aiSummaryActions").innerHTML = actions.map(a=>`<div class="ai-chip" data-nav="${a.view}">${a.label}</div>`).join("");
+  el("#aiSummaryActions").querySelectorAll(".ai-chip").forEach(c=>c.addEventListener("click",()=>setView(c.dataset.nav)));
+}
+
+function renderDashboardVehicles(){
+  const list = el("#vehicleList");
+  let sorted = [...vehicles].sort((a,b)=>{
+    const order = {problem:0,offline:1,risk:2,charging:3,ready:4,unknown:5};
+    return (order[a.status]||9) - (order[b.status]||9);
+  });
+  if(vehicleFilter==="issues") sorted = sorted.filter(v=>v.status!=="ready");
+
+  list.innerHTML = sorted.map(v=>{
+    const socClass = v.soc>=70?"high":v.soc>=40?"mid":"low";
+    const rowClass = v.status==="problem"||v.status==="offline"?"alert-row":v.status==="risk"?"warn-row":"";
+    const depTime = v.departure||"—";
+    return `
+      <div class="v-row ${rowClass}" data-vid="${v.id}">
+        <div><div class="v-status-dot ${v.status}"></div></div>
+        <div>
+          <div class="v-id">${esc(v.id)}</div>
+          <div class="v-model">${esc(v.model)} • ${esc(v.driver||"")}</div>
+        </div>
+        <div>
+          <div class="v-soc-bar"><div class="v-soc-fill ${socClass}" style="width:${v.soc}%"></div></div>
+          <div class="v-soc-text">${v.soc}%</div>
+        </div>
+        <div class="v-col-dep" style="font-size:11px;color:var(--muted)">Avg. ${depTime}</div>
+        <div style="font-size:11px"><span class="chip ${statusClass(v.status)}">${statusLabel(v.status)}</span></div>
+        <div class="v-col-action" style="font-size:18px;color:var(--muted);text-align:center">›</div>
+      </div>`;
+  }).join("");
+
+  list.querySelectorAll(".v-row").forEach(row=>{
+    row.addEventListener("click",()=>openVehicleDetail(row.dataset.vid));
+  });
+}
+
+el("#btnFilterAll").addEventListener("click",()=>{vehicleFilter="all";renderDashboardVehicles()});
+el("#btnFilterIssues").addEventListener("click",()=>{vehicleFilter="issues";renderDashboardVehicles()});
+
+function renderDashboardAlerts(){
+  const active = alerts.filter(a=>a.status==="active").sort((a,b)=>{
+    const o={critical:0,warning:1,info:2};return(o[a.type]||9)-(o[b.type]||9);
+  });
+  const list = el("#dashAlertList");
+  el("#alertCountChip").textContent = active.length;
+
+  if(!active.length){
+    list.innerHTML = `<div class="empty-state" style="padding:20px"><div class="empty-icon">✅</div><h3>Inga aktiva avvikelser</h3><p>Allt ser bra ut!</p></div>`;
+    return;
+  }
+
+  list.innerHTML = active.map(a=>`
+    <div class="alert-item ${a.type}" data-aid="${a.id}">
+      <div class="alert-icon">${a.type==="critical"?"🔴":a.type==="warning"?"🟡":"🔵"}</div>
+      <div class="alert-content">
+        <div class="alert-title">${esc(a.vehicle)} — ${esc(a.title)}</div>
+        <div class="alert-desc">${esc(a.desc)}</div>
+        ${a.suggestion?`<div class="alert-action">💡 ${esc(a.suggestion)}</div>`:""}
+        <div class="alert-time">${a.time}</div>
+      </div>
+    </div>
+  `).join("");
+}
+
+function renderWeekChart(){
+  const chart = el("#weekChart");
+  const days = [];
+  for(let i=6;i>=0;i--){
+    const d = new Date(NOW);d.setDate(d.getDate()-i);
+    const ds = d.toISOString().split("T")[0];
+    const dayKwh = sessionHistory.filter(s=>s.date===ds).reduce((sum,s)=>sum+s.kwh,0);
+    days.push(dayKwh);
+  }
+  const max = Math.max(...days,1);
+  chart.innerHTML = days.map(d=>`<div class="bar" style="height:${Math.max(d/max*100,4)}%"></div>`).join("");
+  
+  const total = days.reduce((s,d)=>s+d,0);
+  el("#weekTotalKwh").textContent = `${total} kWh`;
+  el("#weekTrend").textContent = "denna vecka";
+  el("#weekTrend").className = "trend-change flat";
+}
+
+/* ── Vehicles View ── */
+function renderVehicles(){
+  el("#vehiclesMeta").textContent = `${vehicles.length} fordon registrerade`;
+  el("#settingsVehicleCount").textContent = vehicles.length;
+  
+  const search = (el("#vehicleSearch").value||"").toLowerCase();
+  const filtered = vehicles.filter(v=>
+    !search || v.id.toLowerCase().includes(search) || v.model.toLowerCase().includes(search) || (v.driver||"").toLowerCase().includes(search)
+  );
+
+  el("#vehicleTableBody").innerHTML = filtered.map(v=>{
+    const socClass = v.soc>=70?"high":v.soc>=40?"mid":"low";
+    return `
+      <tr style="cursor:pointer" data-vid="${v.id}">
+        <td><span class="chip ${statusClass(v.status)}">${statusLabel(v.status)}</span></td>
+        <td><strong>${esc(v.id)}</strong></td>
+        <td>${esc(v.model)}</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div class="v-soc-bar" style="max-width:60px"><div class="v-soc-fill ${socClass}" style="width:${v.soc}%"></div></div>
+            <span style="font-weight:700;font-size:11px">${v.soc}%</span>
+          </div>
+        </td>
+        <td style="font-size:11px;color:var(--muted)">${v.lastCharge?v.lastCharge.split(" ")[0]:"—"}</td>
+        <td style="font-size:11px">${v.departure||"—"}</td>
+        <td style="font-size:11px;color:var(--muted)">${esc(v.location)}</td>
+      </tr>`;
+  }).join("");
+
+  el("#vehicleTableBody").querySelectorAll("tr").forEach(row=>{
+    row.addEventListener("click",()=>openVehicleDetail(row.dataset.vid));
+  });
+}
+el("#vehicleSearch").addEventListener("input",()=>{if(activeView==="vehicles")renderVehicles()});
+
+/* ── Vehicle Detail Panel ── */
+function openVehicleDetail(vid){
+  const v = vehicles.find(x=>x.id===vid);
+  if(!v) return;
+  
+  el("#dpTitle").textContent = v.id;
+  el("#dpSubtitle").textContent = `${v.model} • ${v.driver||"Okänd förare"}`;
+  
+  const sessions = sessionHistory.filter(s=>s.vehicle===vid).slice(0,10);
+  const totalKwh30d = sessionHistory.filter(s=>s.vehicle===vid).reduce((sum,s)=>sum+s.kwh,0);
+  const sessCount = sessionHistory.filter(s=>s.vehicle===vid).length;
+  
+  el("#dpBody").innerHTML = `
+    <div class="dp-section">
+      <div class="dp-section-title">Status</div>
+      <div class="dp-kv">
+        <div class="dp-kv-item"><div class="kv-label">Status</div><div class="kv-value"><span class="chip ${statusClass(v.status)}">${statusLabel(v.status)}</span></div></div>
+        <div class="dp-kv-item"><div class="kv-label">SoC</div><div class="kv-value">${v.soc}%</div></div>
+        <div class="dp-kv-item"><div class="kv-label">Mål-SoC</div><div class="kv-value">${v.targetSoc}%</div></div>
+        <div class="dp-kv-item"><div class="kv-label">Nästa avgång</div><div class="kv-value">${v.departure||"—"}</div></div>
+        <div class="dp-kv-item"><div class="kv-label">Plats</div><div class="kv-value">${esc(v.location)}</div></div>
+        <div class="dp-kv-item"><div class="kv-label">Batteri</div><div class="kv-value">${v.batteryKwh} kWh</div></div>
+      </div>
+      ${v.notes?`<div style="margin-top:10px;padding:8px 10px;border-radius:var(--radius-xs);background:var(--warn-bg);border:1px solid rgba(255,152,0,.2);font-size:11px"><strong>⚠</strong> ${esc(v.notes)}</div>`:""}
+    </div>
+
+    ${v.status==="problem"||v.status==="risk"?`
+    <div class="dp-section">
+      <div class="dp-section-title">🤖 AI Analys</div>
+      <div class="ai-box" style="margin:0">
+        <div class="ai-box-body">${getVehicleAiAnalysis(v)}</div>
+      </div>
+    </div>`:""}
+
+    <div class="dp-section">
+      <div class="dp-section-title">30 dagars sammanfattning</div>
+      <div class="dp-kv">
+        <div class="dp-kv-item"><div class="kv-label">Total energi</div><div class="kv-value">${totalKwh30d} kWh</div></div>
+        <div class="dp-kv-item"><div class="kv-label">Sessioner</div><div class="kv-value">${sessCount}</div></div>
+        <div class="dp-kv-item"><div class="kv-label">Uppsk. kostnad</div><div class="kv-value">${Math.round(totalKwh30d*1.8)} kr</div></div>
+        <div class="dp-kv-item"><div class="kv-label">CO₂ besparat</div><div class="kv-value">${Math.round(totalKwh30d*0.15*220/1000)} kg</div></div>
+      </div>
+    </div>
+
+    <div class="dp-section">
+      <div class="dp-section-title">Senaste sessioner</div>
+      ${sessions.length?`
+      <div class="session-timeline">
+        ${sessions.map(s=>{
+          const dotClass = s.status==="slutförd"?"green":s.status==="avbruten"?"red":"orange";
+          return `
+          <div class="st-event">
+            <div class="st-dot ${dotClass}">⚡</div>
+            <div class="st-content">
+              <div class="st-title">${s.kwh} kWh — ${s.location}</div>
+              <div class="st-time">${s.date} • ${s.durationMin} min • ${s.source}</div>
+              ${s.status!=="slutförd"?`<div class="st-detail" style="color:var(--bad)">Status: ${s.status}</div>`:""}
+            </div>
+          </div>`;
+        }).join("")}
+      </div>`:`<div style="font-size:11px;color:var(--muted)">Inga sessioner registrerade.</div>`}
+    </div>
+  `;
+
+  el("#detailPanel").classList.add("open");
+  el("#dpOverlay").classList.add("open");
+}
+
+function getVehicleAiAnalysis(v){
+  if(v.status==="problem" && v.notes && v.notes.includes("EVSE_TIMEOUT")){
+    return `<strong>Trolig orsak:</strong> Laddarens kontaktor har timeout (EVSE_TIMEOUT). Detta tyder på ett kommunikationsfel mellan fordon och laddare, ofta orsakat av löst kontakt, uppdatering av laddprogramvara, eller en trasig kontaktor.<br><br><strong>Rekommendation:</strong> Försök återansluta kabeln. Om felet kvarstår, byt till en annan laddplats. Rapportera felet till anläggningsägaren.`;
+  }
+  if(v.status==="problem" || v.status==="offline"){
+    return `<strong>Analys:</strong> Fordonet har inte rapporterat data. Möjliga orsaker: batteriet i fordonets telematikmodul är slut, fordonet är på plats utan täckning, eller fordonet har tekniskt fel.<br><br><strong>Rekommendation:</strong> Kontakta förare ${esc(v.driver||"")} för att verifiera fordonets status.`;
+  }
+  if(v.status==="risk" && v.notes && v.notes.includes("Kabel ej")){
+    return `<strong>Trolig orsak:</strong> Förare har parkerat fordonet men glömt att ansluta laddkabeln. SoC ${v.soc}% räcker inte till mål ${v.targetSoc}%.<br><br><strong>Rekommendation:</strong> Skicka push-notis till förare ${esc(v.driver||"")}. Om ingen respons inom 30 min, kontakta nattjour för manuell inkoppling.`;
+  }
+  if(v.status==="risk"){
+    return `<strong>Analys:</strong> Fordonet har ${v.soc}% SoC (mål ${v.targetSoc}%). ${v.location.includes("Hemma")?"Fordonet laddar hemma utan realtidsdata. ":""}Baserat på historisk laddning behövs ~${Math.ceil((v.targetSoc-v.soc)/100*v.batteryKwh/7*60)} min för att nå mål.<br><br><strong>Rekommendation:</strong> ${v.location.includes("Hemma")?"Bed förare bekräfta att laddning pågår.":"Verifiera att laddning pågår och uppskatta om mål nås före avgång."}`;
+  }
+  return `Fordonet ser bra ut. Inga avvikelser att rapportera.`;
+}
+
+el("#dpClose").addEventListener("click",()=>{el("#detailPanel").classList.remove("open");el("#dpOverlay").classList.remove("open")});
+el("#dpOverlay").addEventListener("click",()=>{el("#detailPanel").classList.remove("open");el("#dpOverlay").classList.remove("open")});
+
+/* ── Alerts View ── */
+function renderAlerts(){
+  const active = alerts.filter(a=>a.status==="active");
+  const critical = active.filter(a=>a.type==="critical");
+  const warnings = active.filter(a=>a.type==="warning");
+
+  el("#alertsAiBody").innerHTML = active.length === 0 
+    ? `Inga aktiva avvikelser. Flottan ser bra ut! 🎉`
+    : `<strong>${critical.length} kritiska</strong> och <strong>${warnings.length} varningar</strong> aktiva just nu. ` +
+      (critical.length ? `Prioritera <strong>${critical[0].vehicle}</strong> — ${critical[0].suggestion}` : `De aktiva varningarna bör hanteras före morgondagens avgångar.`);
+
+  const list = el("#fullAlertList");
+  list.innerHTML = alerts.map(a=>`
+    <div class="alert-item ${a.type}" style="${a.status==="resolved"?"opacity:.6":""}">
+      <div class="alert-icon">${a.type==="critical"?"🔴":a.type==="warning"?"🟡":"🔵"}</div>
+      <div class="alert-content">
+        <div class="alert-title">${esc(a.vehicle)} — ${esc(a.title)} ${a.status==="resolved"?'<span class="chip gray">Löst</span>':""}</div>
+        <div class="alert-desc">${esc(a.desc)}</div>
+        ${a.suggestion?`<div class="alert-action">💡 ${esc(a.suggestion)}</div>`:""}
+        <div class="alert-time">${a.time}</div>
+      </div>
+    </div>
+  `).join("");
+
+  els("[data-alertfilter]").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const f = btn.dataset.alertfilter;
+      const items = el("#fullAlertList").querySelectorAll(".alert-item");
+      items.forEach((item,i)=>{
+        const a = alerts[i];
+        if(f==="all") item.style.display="flex";
+        else if(f==="active") item.style.display = a.status==="active"?"flex":"none";
+        else item.style.display = a.status==="resolved"?"flex":"none";
+      });
+    });
+  });
+}
+
+/* ── History View ── */
+function renderHistory(){
+  // Populate vehicle filter
+  const vf = el("#histVehicleFilter");
+  if(vf.options.length<=1){
+    vehicles.forEach(v=>{
+      const opt = document.createElement("option");opt.value=v.id;opt.textContent=v.id;
+      vf.appendChild(opt);
+    });
+  }
+
+  const vid = vf.value;
+  const days = parseInt(el("#histPeriodFilter").value);
+  const cutoff = new Date(NOW);cutoff.setDate(cutoff.getDate()-days);
+  const cutoffStr = cutoff.toISOString().split("T")[0];
+
+  const filtered = sessionHistory.filter(s=>{
+    if(vid!=="all" && s.vehicle!==vid) return false;
+    return s.date >= cutoffStr;
+  });
+
+  // Stats
+  const totalKwh = filtered.reduce((s,r)=>s+r.kwh,0);
+  const totalCost = filtered.reduce((s,r)=>s+r.cost,0);
+  const missed = filtered.filter(s=>s.status!=="slutförd").length;
+  el("#hist30kwh").textContent = `${totalKwh} kWh`;
+  el("#hist30avg").textContent = `${Math.round(totalKwh/days)} kWh`;
+  el("#hist30sess").textContent = filtered.length;
+  el("#hist30missed").textContent = missed;
+  el("#hist30cost").textContent = `${Math.round(totalCost)} kr`;
+
+  // Energy chart
+  const chart = el("#historyEnergyChart");
+  const dayBuckets = {};
+  for(let i=days-1;i>=0;i--){
+    const d = new Date(NOW);d.setDate(d.getDate()-i);
+    const ds = d.toISOString().split("T")[0];
+    dayBuckets[ds] = 0;
+  }
+  filtered.forEach(s=>{if(dayBuckets[s.date]!==undefined) dayBuckets[s.date]+=s.kwh});
+  const vals = Object.values(dayBuckets);
+  const maxV = Math.max(...vals,1);
+  chart.innerHTML = vals.map(v=>`<div class="bar" style="height:${Math.max(v/maxV*100,2)}%"></div>`).join("");
+
+  // Table
+  el("#historyTableBody").innerHTML = filtered.slice(0,50).map(s=>{
+    const statusChip = s.status==="slutförd"?`<span class="chip green">OK</span>`:s.status==="avbruten"?`<span class="chip red">Avbruten</span>`:`<span class="chip orange">Ofullst.</span>`;
+    const sourceChip = s.source==="ChargeNode"?`<span class="chip blue">CN</span>`:`<span class="chip gray">Extern</span>`;
+    return `<tr>
+      <td>${s.date}</td><td><strong>${s.vehicle}</strong></td><td>${esc(s.location)}</td>
+      <td>${s.kwh} kWh</td><td>${s.durationMin} min</td><td>${sourceChip}</td><td>${statusChip}</td>
+    </tr>`;
+  }).join("");
+}
+el("#histVehicleFilter").addEventListener("change",()=>renderHistory());
+el("#histPeriodFilter").addEventListener("change",()=>renderHistory());
+
+/* ── Reports View ── */
+function renderReports(){
+  const reports = [
+    {icon:"🌱",title:"CO₂-rapport",desc:"Sammanställning av besparade utsläpp jämfört med dieselreferens. Redo för hållbarhetsredovisning.",tags:["Hållbarhet","Månadsvis"]},
+    {icon:"💰",title:"Kostnadsrapport",desc:"Laddkostnader per fordon, plats och period. Jämförelse mot föregående period.",tags:["Ekonomi","Trend"]},
+    {icon:"⚡",title:"Energirapport",desc:"Total energiförbrukning, genomsnitt per fordon, fördelning mellan ChargeNode och extern laddning.",tags:["Energi","Fördelning"]},
+    {icon:"⚠️",title:"Avvikelserapport",desc:"Sammanställning av laddavvikelser, missade sessioner och förarbeteende.",tags:["Drift","Kvalitet"]},
+    {icon:"🚐",title:"Fordonsrapport",desc:"Status och historik per fordon — SoC-trender, laddmönster och användning.",tags:["Fordon","Detalj"]},
+    {icon:"📊",title:"Anpassad rapport",desc:"Bygg din egen rapport med valfria parametrar, period och fordon.",tags:["Flexibel","AI"]},
+  ];
+
+  el("#reportGrid").innerHTML = reports.map(r=>`
+    <div class="report-card">
+      <div class="rc-icon">${r.icon}</div>
+      <h4>${r.title}</h4>
+      <p>${r.desc}</p>
+      <div style="margin-top:8px;display:flex;gap:4px">${r.tags.map(t=>`<span class="chip blue">${t}</span>`).join("")}</div>
+    </div>
+  `).join("");
+
+  el("#reportGrid").querySelectorAll(".report-card").forEach(card=>{
+    card.addEventListener("click",()=>toast("Rapport genereras... (demo)"));
+  });
+}
+
+/* ── Upload View ── */
+function renderUpload(){
+  const vs = el("#uploadVehicle");
+  if(vs.options.length===0){
+    vehicles.forEach(v=>{const o=document.createElement("option");o.value=v.id;o.textContent=`${v.id} — ${v.model}`;vs.appendChild(o)});
+  }
+  renderUploadedSessions();
+}
+
+function renderUploadedSessions(){
+  const container = el("#uploadedSessionsList");
+  if(!uploadedSessions.length){
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><h3>Inga uppladdade sessioner</h3><p>Ladda upp CSV eller lägg till manuellt ovan.</p></div>`;
+    return;
+  }
+  container.innerHTML = `<table class="session-table"><thead><tr><th>Datum</th><th>Fordon</th><th>kWh</th><th>Plats</th></tr></thead><tbody>${
+    uploadedSessions.map(s=>`<tr><td>${s.date}</td><td>${s.vehicle}</td><td>${s.kwh}</td><td>${esc(s.location)}</td></tr>`).join("")
+  }</tbody></table>`;
+}
+
+el("#btnManualUpload").addEventListener("click",()=>{
+  const v = el("#uploadVehicle").value;
+  const d = el("#uploadDate").value;
+  const kwh = parseFloat(el("#uploadKwh").value);
+  const loc = el("#uploadLocation").value;
+  if(!v||!d||!kwh){toast("Fyll i alla fält");return}
+  uploadedSessions.push({date:d,vehicle:v,kwh,location:loc||"Extern",source:"Extern",status:"slutförd",durationMin:Math.round(kwh/7*60),cost:Math.round(kwh*2.5*100)/100});
+  sessionHistory.unshift({date:d,vehicle:v,kwh,location:loc||"Extern",source:"Extern",status:"slutförd",durationMin:Math.round(kwh/7*60),cost:Math.round(kwh*2.5*100)/100});
+  toast(`Session tillagd: ${v} — ${kwh} kWh`);
+  el("#uploadKwh").value="";el("#uploadLocation").value="";
+  renderUploadedSessions();
+});
+
+/* ── Settings ── */
+function renderSettings(){
+  el("#settingsVehicleCount").textContent = vehicles.length;
+}
+
+/* ═══════════════════════════════════════════════════
+   SCHEDULE DATA & AI PATTERN DETECTION
+   ═══════════════════════════════════════════════════ */
+
+// Schedules
+const schedules = [
+  {id:"SCH-001",vehicleId:"HBG 01A",arrival:"18:00",departure:"06:30",needKwh:40,priority:"normal",days:"weekdays"},
+  {id:"SCH-002",vehicleId:"HBG 02B",arrival:"17:30",departure:"06:30",needKwh:30,priority:"normal",days:"weekdays"},
+  {id:"SCH-003",vehicleId:"HBG 03C",arrival:"18:00",departure:"06:30",needKwh:45,priority:"high",days:"weekdays"},
+  {id:"SCH-004",vehicleId:"HBG 04D",arrival:"17:00",departure:"07:00",needKwh:35,priority:"critical",days:"daily"},
+  {id:"SCH-005",vehicleId:"HBG 05E",arrival:"18:30",departure:"07:00",needKwh:28,priority:"normal",days:"weekdays"},
+  {id:"SCH-006",vehicleId:"HBG 06F",arrival:"17:00",departure:"06:30",needKwh:50,priority:"high",days:"weekdays"},
+  {id:"SCH-007",vehicleId:"HBG 07G",arrival:"17:30",departure:"07:00",needKwh:30,priority:"normal",days:"weekdays"},
+  {id:"SCH-008",vehicleId:"HBG 08H",arrival:"18:00",departure:"06:30",needKwh:25,priority:"normal",days:"weekdays"},
+];
+
+// AI Pattern Detection — analyzes historical sessions to find anomalies
+function detectPatterns(){
+  const patterns = [];
+  const today = NOW.toISOString().split("T")[0];
+  const dayOfWeek = NOW.getDay(); // 0=sun, 1=mon...
+  const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
+
+  vehicles.forEach(v => {
+    // Get this vehicle's sessions from last 30 days
+    const vSessions = sessionHistory.filter(s => s.vehicle === v.id);
+    if(vSessions.length < 5) return; // Need enough history
+
+    // --- Pattern 1: Expected nightly charge missing ---
+    // Count weekday sessions in last 14 days
+    const last14 = vSessions.filter(s => {
+      const d = new Date(s.date);
+      const diff = (NOW - d) / (1000*60*60*24);
+      return diff <= 14 && diff > 0;
+    });
+    const weekdaySessions = last14.filter(s => {
+      const d = new Date(s.date);
+      return d.getDay() >= 1 && d.getDay() <= 5;
+    });
+    const weekdayCount = weekdaySessions.length;
+    const expectedWeekdays = 10; // ~10 weekdays in 14 days
+    const chargeRate = weekdayCount / expectedWeekdays;
+
+    // If vehicle typically charges on weekdays (>70% rate) but no session today
+    const todaySessions = vSessions.filter(s => s.date === today);
+    if(isWeekday && chargeRate > 0.7 && todaySessions.length === 0 && v.status !== "charging" && v.status !== "ready"){
+      patterns.push({
+        type: "missing_session",
+        severity: v.soc < 50 ? "critical" : "warning",
+        vehicle: v.id,
+        title: `${v.id} — Förväntad laddning uteblev`,
+        desc: `Fordonet laddar normalt varje vardag (${Math.round(chargeRate*100)}% av vardagarna senaste 14 dagarna). Ingen laddningssession registrerad idag.`,
+        pattern: `Historiskt mönster: Laddning ${weekdayCount} av ${expectedWeekdays} vardagar. SoC nu: ${v.soc}%.`,
+        action: v.soc < 40 ? "Kritiskt: Fordonet riskerar att inte klara morgondagens uppdrag. Kontakta förare omedelbart." : "Verifiera att fordonet är anslutet. Skicka påminnelse till förare.",
+        icon: "🔍"
+      });
+    }
+
+    // --- Pattern 2: Unusually low energy ---
+    const avgKwh = vSessions.reduce((sum,s)=>sum+s.kwh,0) / vSessions.length;
+    const lastSession = vSessions[0]; // Most recent
+    if(lastSession && lastSession.date === today && lastSession.kwh < avgKwh * 0.15 && avgKwh > 15){
+      patterns.push({
+        type: "low_energy",
+        severity: "warning",
+        vehicle: v.id,
+        title: `${v.id} — Onormalt låg energi (${lastSession.kwh} kWh)`,
+        desc: `Senaste sessionen levererade bara ${lastSession.kwh} kWh. Genomsnittet är ${Math.round(avgKwh)} kWh (senaste 30 sessioner). Det kan tyda på tidig avbruten session, laddningsfel, eller löst kabelkontakt.`,
+        pattern: `Normalt mönster: ${Math.round(avgKwh)} kWh ±${Math.round(avgKwh*0.25)} kWh per session. Avvikelse: ${Math.round((1-lastSession.kwh/avgKwh)*100)}% under genomsnittet.`,
+        action: "Kontrollera laddloggen. Om sessionen avbröts tidigt, undersök orsak (laddfel, kabel, strömbortfall).",
+        icon: "⚡"
+      });
+    }
+
+    // --- Pattern 3: Degrading charge amounts over time ---
+    const recent7 = vSessions.filter(s => {
+      const diff = (NOW - new Date(s.date)) / (1000*60*60*24);
+      return diff <= 7;
+    });
+    const older = vSessions.filter(s => {
+      const diff = (NOW - new Date(s.date)) / (1000*60*60*24);
+      return diff > 14 && diff <= 28;
+    });
+    if(recent7.length >= 3 && older.length >= 3){
+      const recentAvg = recent7.reduce((s,r)=>s+r.kwh,0)/recent7.length;
+      const olderAvg = older.reduce((s,r)=>s+r.kwh,0)/older.length;
+      if(recentAvg < olderAvg * 0.7){
+        patterns.push({
+          type: "declining_energy",
+          severity: "info",
+          vehicle: v.id,
+          title: `${v.id} — Sjunkande laddningsmängd`,
+          desc: `Genomsnittlig energi senaste 7 dagarna: ${Math.round(recentAvg)} kWh jämfört med ${Math.round(olderAvg)} kWh för 2–4 veckor sedan. Kan indikera ändrat körmönster, batteriproblem eller laddare som stryper effekt.`,
+          pattern: `Trend: -${Math.round((1-recentAvg/olderAvg)*100)}% energi per session.`,
+          action: "Undersök om körsträcka minskat eller om det finns tekniskt problem.",
+          icon: "📉"
+        });
+      }
+    }
+
+    // --- Pattern 4: Vehicle that normally charges at specific time didn't show up ---
+    const schedule = schedules.find(s => s.vehicleId === v.id);
+    if(schedule && isWeekday && (schedule.days === "weekdays" || schedule.days === "daily")){
+      const arrHour = parseInt(schedule.arrival.split(":")[0]);
+      const nowHour = NOW.getHours();
+      // If it's past arrival time + 2h and vehicle isn't charging/ready at depot
+      if(nowHour > arrHour + 2 && v.status !== "charging" && v.status !== "ready" && v.location !== "Depå Varberg"){
+        patterns.push({
+          type: "late_arrival",
+          severity: "warning",
+          vehicle: v.id,
+          title: `${v.id} — Ej ankommet enligt schema`,
+          desc: `Fordonet har schema med ankomst ${schedule.arrival} men befinner sig på "${v.location}" och laddar inte. Det är nu ${nowHour > arrHour ? nowHour - arrHour : 24 - arrHour + nowHour}h efter planerad ankomst.`,
+          pattern: `Schema: ankomst ${schedule.arrival}, avgång ${schedule.departure}. Behov: ${schedule.needKwh} kWh.`,
+          action: `Kontakta förare ${v.driver || ""}. Om fordonet inte anländer ikväll, säkerställ alternativ.`,
+          icon: "🕐"
+        });
+      }
+    }
+  });
+
+  // --- Inject demo pattern alerts for specific vehicles ---
+  // HBG 03C: normally charges every weekday night but cable not connected
+  if(!patterns.find(p => p.vehicle === "HBG 03C" && p.type === "missing_session")){
+    patterns.push({
+      type: "missing_session",
+      severity: "warning",
+      vehicle: "HBG 03C",
+      title: "HBG 03C — Förväntad nattladdning uteblev",
+      desc: "Fordonet laddar normalt varje vardagskväll (92% av vardagarna senaste 14 dagarna). Kabel ej ansluten trots att fordonet är parkerat på depå sedan 18:00.",
+      pattern: "Historiskt mönster: Ansluts normalt kl 18:00–18:30 varje vardag. Genomsnittlig session: 38 kWh.",
+      action: "Skicka påminnelse till förare Maria K. eller kontakta nattjour för manuell inkoppling.",
+      icon: "🔌"
+    });
+  }
+
+  // HBG 04D: normally charges ~35 kWh but last session was only 1 kWh (EVSE_TIMEOUT)
+  const has04D = patterns.find(p => p.vehicle === "HBG 04D" && p.type === "low_energy");
+  if(!has04D){
+    patterns.push({
+      type: "low_energy",
+      severity: "critical",
+      vehicle: "HBG 04D",
+      title: "HBG 04D — Onormalt låg energi (1 kWh istället för ~35 kWh)",
+      desc: "Senaste sessionen levererade bara 1 kWh innan den avbröts (EVSE_TIMEOUT). Fordonets genomsnitt är 34 kWh per session. Detta tyder på ett laddningsfel som avbröt sessionen nästan direkt.",
+      pattern: "Normalt mönster: 34 kWh ±8 kWh per session. Avvikelse: 97% under genomsnittet. Laddtid: 3 min (normalt 4–5h).",
+      action: "Kritiskt: Fordonet har 15% SoC och avgår 07:00. Försök återansluta kabeln till annan laddplats. Kontakta nattjour.",
+      icon: "🚨"
+    });
+  }
+
+  return patterns.sort((a,b) => {
+    const sev = {critical:0,warning:1,info:2};
+    return (sev[a.severity]||9) - (sev[b.severity]||9);
+  });
+}
+
+// Vehicle's historical pattern summary (for Gantt expected bars)
+function getExpectedChargeWindow(vehicleId){
+  const sch = schedules.find(s => s.vehicleId === vehicleId);
+  if(sch) return {arrival:sch.arrival, departure:sch.departure, kwh:sch.needKwh, source:"schema"};
+  // Fallback: analyze history
+  const vSessions = sessionHistory.filter(s => s.vehicle === vehicleId).slice(0,14);
+  if(vSessions.length >= 3){
+    return {arrival:"18:00", departure:"06:30", kwh:Math.round(vSessions.reduce((s,r)=>s+r.kwh,0)/vSessions.length), source:"mönster"};
+  }
+  return null;
+}
+
+/* ── Schedule Rendering ── */
+function renderSchedule(){
+  renderPatternAlerts();
+  renderGantt();
+  renderScheduleForm();
+  renderScheduleList();
+  el("#navSchCount").textContent = schedules.length;
+}
+
+function renderPatternAlerts(){
+  const patterns = detectPatterns();
+  const container = el("#patternAlerts");
+  
+  // AI summary
+  const critical = patterns.filter(p => p.severity === "critical");
+  const warnings = patterns.filter(p => p.severity === "warning");
+  
+  let aiHtml = "";
+  if(patterns.length === 0){
+    aiHtml = "Alla fordon följer sina historiska laddningsmönster. Inga avvikelser detekterade.";
+  } else {
+    aiHtml = `<strong>Mönsteravvikelser detekterade:</strong> `;
+    if(critical.length) aiHtml += `<strong style="color:var(--bad)">${critical.length} kritiska</strong> — `;
+    if(warnings.length) aiHtml += `<strong style="color:var(--warn)">${warnings.length} varningar</strong>. `;
+    aiHtml += `<br><br>Systemet har analyserat historiska laddningsmönster för varje fordon och identifierat avvikelser från normalt beteende. `;
+    if(critical.length) aiHtml += `<br><strong>⚡ Prioritera:</strong> ${critical[0].title}`;
+  }
+  el("#patternAiContent").innerHTML = aiHtml;
+
+  // Pattern alert cards
+  container.innerHTML = patterns.map(p => `
+    <div class="pattern-alert ${p.severity==="critical"?"critical-pattern":"anomaly"}">
+      <div class="pa-icon">${p.icon}</div>
+      <div class="pa-content">
+        <div class="pa-title">${esc(p.title)}</div>
+        <div class="pa-desc">${esc(p.desc)}</div>
+        <div class="pa-pattern">📊 ${esc(p.pattern)}</div>
+        <div class="pa-action">💡 ${esc(p.action)}</div>
+      </div>
+      <span class="chip ${p.severity==="critical"?"red":p.severity==="warning"?"orange":"blue"}" style="flex-shrink:0;align-self:start">${p.severity==="critical"?"Kritisk":p.severity==="warning"?"Varning":"Info"}</span>
+    </div>
+  `).join("");
+}
+
+function renderGantt(){
+  const wrap = el("#ganttWrap");
+  // Time range: 16:00 to 08:00 next day (16h span)
+  const ganttStart = 16; // 16:00
+  const ganttEnd = 32; // 08:00 next day (= 32 for math)
+  const ganttSpan = ganttEnd - ganttStart; // 16 hours
+
+  function timeToPos(timeStr){
+    const [h,m] = timeStr.split(":").map(Number);
+    let hour = h + m/60;
+    if(hour < ganttStart) hour += 24; // Wrap past midnight
+    return ((hour - ganttStart) / ganttSpan) * 100;
+  }
+  function timeToWidth(startStr, endStr){
+    return timeToPos(endStr) - timeToPos(startStr);
+  }
+
+  // Hour labels
+  const hourLabels = [];
+  for(let h=ganttStart;h<ganttEnd;h++){
+    const display = h >= 24 ? (h-24) : h;
+    hourLabels.push(`<div class="gantt-hour-label">${String(display).padStart(2,"0")}</div>`);
+  }
+
+  // Now line position
+  let nowHour = HOUR;
+  if(nowHour < ganttStart) nowHour += 24;
+  const nowPos = ((nowHour - ganttStart) / ganttSpan) * 100;
+  const showNow = nowPos >= 0 && nowPos <= 100;
+
+  // Build rows
+  const rows = vehicles.map(v => {
+    const sch = schedules.find(s => s.vehicleId === v.id);
+    const expected = getExpectedChargeWindow(v.id);
+    const patternAlerts = detectPatterns().filter(p => p.vehicle === v.id);
+    const hasAlert = patternAlerts.length > 0;
+    
+    let barsHtml = "";
+    
+    // Scheduled bar (solid blue)
+    if(sch){
+      const left = timeToPos(sch.arrival);
+      const width = timeToWidth(sch.arrival, sch.departure);
+      barsHtml += `<div class="gantt-bar scheduled" style="left:${left}%;width:${Math.max(width,3)}%" title="Schema: ${sch.arrival}–${sch.departure} (${sch.needKwh} kWh)">${sch.needKwh} kWh</div>`;
+    }
+    
+    // If no schedule but has expected pattern, show dashed green (AI predicted)
+    if(!sch && expected && expected.source === "mönster"){
+      const left = timeToPos(expected.arrival);
+      const width = timeToWidth(expected.arrival, expected.departure);
+      barsHtml += `<div class="gantt-bar pattern-expected" style="left:${left}%;width:${Math.max(width,3)}%" title="AI förväntat: ${expected.arrival}–${expected.departure} (~${expected.kwh} kWh)">~${expected.kwh} kWh</div>`;
+    }
+
+    // Actual status overlay
+    if(v.status === "charging"){
+      // Show current charge bar
+      const startTime = v.lastCharge ? v.lastCharge.split(" ")[1] : "22:00";
+      const left = timeToPos(startTime);
+      const nowP = showNow ? nowPos : 100;
+      const width = nowP - left;
+      if(width > 0){
+        barsHtml += `<div class="gantt-bar charging" style="left:${left}%;width:${Math.max(width,2)}%" title="Laddar nu sedan ${startTime}">⚡ ${v.soc}%</div>`;
+      }
+    }
+
+    // Pattern missing — dashed red overlay if expected but not happening
+    if(hasAlert && patternAlerts.some(p => p.type === "missing_session" || p.type === "low_energy")){
+      const exp = expected || {arrival:"18:00",departure:"06:30"};
+      const left = timeToPos(exp.arrival);
+      const width = timeToWidth(exp.arrival, exp.departure);
+      if(v.status !== "charging" && v.status !== "ready"){
+        barsHtml += `<div class="gantt-bar pattern-missing" style="left:${left}%;width:${Math.max(width,3)}%" title="⚠ Förväntad laddning saknas!">⚠ Saknas</div>`;
+      }
+    }
+
+    return `
+      <div class="gantt-row ${hasAlert?"has-pattern-alert":""}" data-vid="${v.id}" style="cursor:pointer">
+        <div class="gantt-vehicle">
+          <div class="gv-id">${v.id} <span class="chip ${statusClass(v.status)}" style="font-size:8px;padding:1px 4px">${statusLabel(v.status)}</span></div>
+          <div class="gv-meta">${esc(v.model.split(" ").slice(-1)[0])} • ${v.soc}%${hasAlert?" ⚠":""}</div>
+        </div>
+        <div class="gantt-bars">
+          ${barsHtml}
+          ${showNow?`<div class="gantt-now" style="left:${nowPos}%"></div>`:""}
+        </div>
+      </div>`;
+  });
+
+  wrap.innerHTML = `
+    <div class="gantt-header">
+      <div class="gantt-hour-labels">${hourLabels.join("")}</div>
+    </div>
+    ${rows.join("")}
+  `;
+
+  // Click to open vehicle detail
+  wrap.querySelectorAll(".gantt-row").forEach(row => {
+    row.addEventListener("click", () => openVehicleDetail(row.dataset.vid));
+  });
+}
+
+function renderScheduleForm(){
+  const vs = el("#schVehicle");
+  if(vs.options.length === 0){
+    vehicles.forEach(v => {
+      const o = document.createElement("option"); o.value = v.id; o.textContent = `${v.id} — ${v.model}`;
+      vs.appendChild(o);
+    });
+  }
+
+  // Update AI suggestion when form changes
+  function updateAiSuggestion(){
+    const vid = el("#schVehicle").value;
+    const kwh = parseInt(el("#schNeedKwh").value) || 0;
+    const arr = el("#schArrival").value;
+    const dep = el("#schDeparture").value;
+    const box = el("#schAiSuggestion");
+    
+    if(!vid || !kwh){box.style.display="none";return}
+    
+    const v = vehicles.find(x => x.id === vid);
+    if(!v){box.style.display="none";return}
+    
+    // Calculate charge window hours
+    const [ah,am] = arr.split(":").map(Number);
+    const [dh,dm] = dep.split(":").map(Number);
+    let windowH = dh - ah + (dm-am)/60;
+    if(windowH <= 0) windowH += 24;
+    
+    // Estimate charge time (assume 7 kW for depot, 11 kW max)
+    const chargeTimeH = kwh / 7;
+    const fits = chargeTimeH <= windowH;
+    const margin = windowH - chargeTimeH;
+    
+    // Historical avg for this vehicle
+    const vSess = sessionHistory.filter(s => s.vehicle === vid);
+    const avgKwh = vSess.length > 0 ? Math.round(vSess.reduce((s,r)=>s+r.kwh,0)/vSess.length) : null;
+
+    let html = `<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11px">`;
+    html += `<span>Laddtid: <strong>${windowH.toFixed(1)}h</strong></span>`;
+    html += `<span>Uppsk. laddtid: <strong>${chargeTimeH.toFixed(1)}h</strong> (7 kW)</span>`;
+    html += `<span>Marginal: <strong style="color:${margin>1?"var(--good)":margin>0?"var(--warn)":"var(--bad)"}">${margin>0?"+":""}${margin.toFixed(1)}h</strong></span>`;
+    if(avgKwh) html += `<span>Historiskt snitt: <strong>${avgKwh} kWh</strong></span>`;
+    html += `</div>`;
+    
+    if(!fits) html += `<div style="margin-top:6px;font-size:11px;color:var(--bad);font-weight:600">⚠ Varning: Laddtiden räcker troligen inte! Överväg att minska behovet eller förlänga laddtiden.</div>`;
+    else if(margin < 1) html += `<div style="margin-top:6px;font-size:11px;color:var(--warn);font-weight:600">⏰ Tight marginal. Om laddning börjar sent kan mål-SoC inte nås.</div>`;
+    if(avgKwh && Math.abs(kwh - avgKwh) > avgKwh * 0.3) html += `<div style="margin-top:4px;font-size:11px;color:var(--info)">💡 Angivet behov (${kwh} kWh) avviker från historiskt snitt (${avgKwh} kWh).</div>`;
+
+    el("#schAiContent").innerHTML = html;
+    box.style.display = "block";
+  }
+
+  ["schVehicle","schArrival","schDeparture","schNeedKwh","schPriority"].forEach(id => {
+    el("#"+id).removeEventListener("change", updateAiSuggestion);
+    el("#"+id).addEventListener("change", updateAiSuggestion);
+    el("#"+id).removeEventListener("input", updateAiSuggestion);
+    el("#"+id).addEventListener("input", updateAiSuggestion);
+  });
+}
+
+function renderScheduleList(){
+  const container = el("#scheduleList");
+  el("#schListMeta").textContent = `${schedules.length} scheman aktiva`;
+
+  if(!schedules.length){
+    container.innerHTML = `<div class="empty-state" style="padding:20px"><div class="empty-icon">📅</div><h3>Inga scheman</h3><p>Lägg till ett schema ovan.</p></div>`;
+    return;
+  }
+
+  const daysLabel = {weekdays:"Mån–Fre",daily:"Varje dag",weekends:"Helger",once:"Engång"};
+  const priLabel = {normal:"Normal",high:"Hög",critical:"Kritisk"};
+  const priClass = {normal:"gray",high:"orange",critical:"red"};
+
+  container.innerHTML = `
+    <div class="sch-list">
+      <div class="sch-item" style="font-weight:700;color:var(--muted);font-size:10px;background:transparent;border:none">
+        <div>Fordon</div><div>Modell</div><div>Ankomst</div><div class="sch-dep">Avgång</div><div class="sch-kwh">kWh</div><div>Readiness</div><div></div>
+      </div>
+      ${schedules.map((s,i) => {
+        const v = vehicles.find(x => x.id === s.vehicleId);
+        const readiness = predictScheduleReadiness(s, v);
+        return `
+        <div class="sch-item">
+          <div><strong>${esc(s.vehicleId)}</strong><br><span style="font-size:9px;color:var(--muted)">${daysLabel[s.days]||s.days}</span></div>
+          <div style="font-size:10px;color:var(--muted)">${v?v.model:"—"}</div>
+          <div>${s.arrival}</div>
+          <div class="sch-dep">${s.departure}</div>
+          <div class="sch-kwh">${s.needKwh}</div>
+          <div><span class="sch-readiness ${readiness.cls}">${readiness.label}</span></div>
+          <div class="sch-delete" data-idx="${i}" title="Ta bort">✕</div>
+        </div>`;
+      }).join("")}
+    </div>
+  `;
+
+  container.querySelectorAll(".sch-delete").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const idx = parseInt(btn.dataset.idx);
+      schedules.splice(idx, 1);
+      toast("Schema borttaget");
+      renderSchedule();
+    });
+  });
+}
+
+function predictScheduleReadiness(sch, vehicle){
+  if(!vehicle) return {label:"—",cls:"gray"};
+  const [ah,am] = sch.arrival.split(":").map(Number);
+  const [dh,dm] = sch.departure.split(":").map(Number);
+  let windowH = dh - ah + (dm-am)/60;
+  if(windowH <= 0) windowH += 24;
+  const chargeTimeH = sch.needKwh / 7;
+  const margin = windowH - chargeTimeH;
+  
+  if(vehicle.status === "ready" && vehicle.soc >= vehicle.targetSoc) return {label:"✓ Redo",cls:"ready"};
+  if(vehicle.status === "charging" && margin > 1) return {label:"↑ Trolig",cls:"likely"};
+  if(margin > 2) return {label:"↑ Trolig",cls:"likely"};
+  if(margin > 0) return {label:"⚠ Risk",cls:"at-risk"};
+  return {label:"✗ Osannolik",cls:"unlikely"};
+}
+
+// Add schedule handler
+el("#btnAddSchedule").addEventListener("click", () => {
+  const vid = el("#schVehicle").value;
+  const arr = el("#schArrival").value;
+  const dep = el("#schDeparture").value;
+  const kwh = parseInt(el("#schNeedKwh").value);
+  const pri = el("#schPriority").value;
+  const days = el("#schDays").value;
+  
+  if(!vid || !kwh){toast("Fyll i alla fält");return}
+  
+  // Check if schedule already exists for this vehicle
+  const existing = schedules.findIndex(s => s.vehicleId === vid);
+  if(existing >= 0){
+    schedules[existing] = {id:schedules[existing].id, vehicleId:vid, arrival:arr, departure:dep, needKwh:kwh, priority:pri, days};
+    toast(`Schema uppdaterat: ${vid}`);
+  } else {
+    schedules.push({id:"SCH-"+String(100+schedules.length), vehicleId:vid, arrival:arr, departure:dep, needKwh:kwh, priority:pri, days});
+    toast(`Schema tillagt: ${vid} • ${arr}–${dep}`);
+  }
+  renderSchedule();
+});
+
+el("#btnClearSchedules").addEventListener("click", () => {
+  if(confirm("Ta bort alla scheman?")){
+    schedules.length = 0;
+    toast("Alla scheman borttagna");
+    renderSchedule();
+  }
+});
+
+/* ── Integrate pattern alerts into dashboard ── */
+function getPatternAlertCount(){
+  return detectPatterns().filter(p => p.severity === "critical" || p.severity === "warning").length;
+}
+
+// Override updateBadges to include pattern alerts
+const _origUpdateBadges = updateBadges;
+
+/* ── Refresh & AI button ── */
+el("#btnRefresh").addEventListener("click",()=>{toast("Uppdaterad");renderView(activeView)});
+el("#btnAiSummary").addEventListener("click",()=>{
+  if(activeView!=="dashboard") setView("dashboard");
+  toast("🤖 AI-analys uppdaterad");
+  renderAiSummary();
+});
+
+/* ═══════════════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════════════ */
+renderDashboard();
+updateBadges();
+</script>
+</body>
+</html>
